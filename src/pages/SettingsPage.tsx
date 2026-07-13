@@ -31,6 +31,17 @@ export function SettingsPage() {
   const [updateState, setUpdateState] = useState<'checking' | 'up-to-date' | 'update-available'>('checking');
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
 
+  const checkUpdate = async () => {
+    setUpdateState('checking');
+    const result = await checkForUpdate(APP_VERSION);
+    if (result.available) {
+      setLatestVersion(result.version);
+      setUpdateState('update-available');
+    } else {
+      setUpdateState('up-to-date');
+    }
+  };
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -87,23 +98,32 @@ export function SettingsPage() {
               {updateState === 'update-available' && `Update available — v${latestVersion}`}
             </p>
           </div>
-          {updateState === 'update-available' && (
-            <button
-              type="button"
-              onClick={async () => {
-                const result = await checkForUpdate(APP_VERSION);
-                if (result.available) {
-                  setUpdateInfo({ version: result.version!, apkUrl: result.apkUrl!, releaseNotes: result.releaseNotes || '' });
-                  setShowUpdateDialog(true);
-                }
-              }}
-              className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-green-600 px-4 py-2 text-xs font-black text-white dark:bg-green-500"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Update
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={checkUpdate}
+            disabled={updateState === 'checking'}
+            className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 dark:bg-white/10 dark:text-slate-300 disabled:opacity-50"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', updateState === 'checking' && 'animate-spin')} />
+            Refresh
+          </button>
         </div>
+        {updateState === 'update-available' && (
+          <button
+            type="button"
+            onClick={async () => {
+              const result = await checkForUpdate(APP_VERSION);
+              if (result.available) {
+                setUpdateInfo({ version: result.version!, apkUrl: result.apkUrl!, releaseNotes: result.releaseNotes || '' });
+                setShowUpdateDialog(true);
+              }
+            }}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 py-3 text-sm font-black text-white dark:bg-green-500"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Update Now
+          </button>
+        )}
       </section>
 
       <section className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75">
