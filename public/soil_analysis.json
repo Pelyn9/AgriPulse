@@ -1,0 +1,55 @@
+{
+  "rice_recommended_soil_types": [
+    "Slightly Acidic"
+  ],
+  "all_soil_types": [
+    "Acidic",
+    "Alkaline",
+    "Neutral",
+    "Slightly Acidic"
+  ],
+  "soil_type_counts": {
+    "Slightly Acidic": 1663,
+    "Neutral": 1435,
+    "Alkaline": 185,
+    "Acidic": 117
+  },
+  "crop_to_soil_types": {
+    "Rice": [
+      "Slightly Acidic"
+    ],
+    "Maize": [
+      "Slightly Acidic"
+    ],
+    "Groundnut": [
+      "Slightly Acidic"
+    ],
+    "Wheat": [
+      "Neutral"
+    ],
+    "Barley": [
+      "Neutral"
+    ],
+    "Sugarcane": [
+      "Neutral"
+    ],
+    "Cotton": [
+      "Alkaline"
+    ],
+    "Mustard": [
+      "Alkaline"
+    ],
+    "Pearl Millet": [
+      "Alkaline"
+    ],
+    "Tea": [
+      "Acidic"
+    ],
+    "Potato": [
+      "Acidic"
+    ],
+    "Pineapple": [
+      "Acidic"
+    ]
+  }
+}

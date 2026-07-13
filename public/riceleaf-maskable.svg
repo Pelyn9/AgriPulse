@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RiceLeaf AI">
+  <rect width="512" height="512" fill="#0f7a3d"/>
+  <circle cx="256" cy="256" r="190" fill="#dcfce7"/>
+  <path d="M271 94c-87.7 43.4-131.9 112.2-133.1 206.6-.6 46.9 26.4 81.9 66.7 92.8 65.4 17.8 141.1-31.2 165.6-107.7C392.5 216 366.1 149.5 271 94Z" fill="#16a34a"/>
+  <path d="M193 361c44.5-82.4 87.7-147.7 137.3-201" fill="none" stroke="#f0fdf5" stroke-width="25" stroke-linecap="round"/>
+  <path d="M230 268c32 3.5 61.6-5.1 89-25.9" fill="none" stroke="#f0fdf5" stroke-width="19" stroke-linecap="round"/>
+  <path d="M201 324c26.1 3.5 49.9-2.4 71.5-17.3" fill="none" stroke="#f0fdf5" stroke-width="19" stroke-linecap="round"/>
+</svg>
