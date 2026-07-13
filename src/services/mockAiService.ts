@@ -890,6 +890,9 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
   let sampled = 0;
   let hueBins = new Array(12).fill(0);
 
+  // Track hue spread to detect monochromatic vs mixed-color scenes
+  let hueValues: number[] = [];
+
   for (let i = 0; i < total; i += step) {
     const idx = i * 4;
     const r = data[idx], g = data[idx + 1], b = data[idx + 2];
@@ -898,11 +901,11 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
     totalSat += s;
     totalVal += v;
     sampled++;
+    hueValues.push(h);
 
     const hueBin = Math.floor(h / 30) % 12;
     hueBins[hueBin]++;
 
-    // Strict green: must be clearly dominant channel AND saturated enough
     if (g > r + 10 && g > b + 10 && g > 80 && s > 0.15) {
       greenCount++;
       if (s > 0.3 && v < 0.6) darkGreenCount++;
@@ -926,44 +929,72 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
   }
   const dominantHueRange = maxBin * 30;
 
-  // Strict leaf detection: green must be dominant color AND in green hue range
-  const isGreenHue = dominantHueRange >= 60 && dominantHueRange <= 160;
+  // Calculate hue spread (std deviation) — leaves are usually monochromatic, non-leaves are mixed
+  let hueMean = avgHue;
+  let hueVariance = 0;
+  for (let i = 0; i < hueValues.length; i++) {
+    hueVariance += (hueValues[i] - hueMean) ** 2;
+  }
+  const hueStd = Math.sqrt(hueVariance / Math.max(hueValues.length, 1));
+
+  // Count how many hue bins have significant presence (> 10% of samples)
+  let significantBins = 0;
+  for (let i = 0; i < 12; i++) {
+    if (hueBins[i] / Math.max(sampled, 1) > 0.10) significantBins++;
+  }
+
+  // --- LEAF DETECTION ---
+  // A leaf (any color) has: high saturation, low hue spread, and a dominant hue
+  // Non-leaf objects (walls, tables, clothes, skin) have: low saturation OR wide hue spread OR low color dominance
   const hasGreenDominance = greenRatio > 0.35;
   const hasLeafLikeHue = avgHue >= 60 && avgHue <= 160;
-  const hasGoodSaturation = avgSat > 0.15;
-  const isLeaf = isGreenHue && hasGreenDominance && hasLeafLikeHue && hasGoodSaturation;
+  const isGreenHue = dominantHueRange >= 60 && dominantHueRange <= 160;
+
+  // Green leaf: green is dominant
+  const isGreenLeaf = isGreenHue && hasGreenDominance && hasLeafLikeHue && avgSat > 0.15;
+
+  // Non-green leaf: could be yellowing/browning/dying leaf — needs high saturation + narrow hue spread
+  const isNonGreenLeaf = !isGreenLeaf
+    && avgSat > 0.18
+    && significantBins <= 3
+    && hueStd < 50
+    && (dominantHueRange >= 0 && dominantHueRange < 90); // warm hues: red/orange/yellow/brown
+
+  const isLeaf = isGreenLeaf || isNonGreenLeaf;
 
   // Determine dominant color name
   let dominant = 'Non-leaf';
 
   if (isLeaf) {
-    if (avgSat < 0.15) {
-      dominant = avgVal > 0.6 ? 'Pale/Grayish' : 'Dark';
-    } else if (dominantHueRange >= 70 && dominantHueRange <= 150) {
+    if (dominantHueRange >= 60 && dominantHueRange <= 160) {
       // Green hues
       if (avgSat > 0.4 && avgVal > 0.3 && avgVal < 0.6) dominant = 'Dark Green';
       else if (avgSat > 0.3 && avgVal >= 0.6) dominant = 'Bright Green';
       else if (avgSat > 0.15) dominant = 'Light Green';
       else dominant = 'Muted Green';
-    } else if (dominantHueRange >= 30 && dominantHueRange < 70) {
-      // Yellow-green hues
-      if (avgSat > 0.3) dominant = 'Yellowish-Green';
-      else dominant = 'Pale Yellowish';
-    } else if (dominantHueRange >= 0 && dominantHueRange < 30) {
-      // Red/orange hues
+    } else if (dominantHueRange >= 30 && dominantHueRange < 60) {
+      // Yellow hues — nitrogen deficiency
+      dominant = 'Yellowish';
+    } else if (dominantHueRange >= 15 && dominantHueRange < 30) {
+      // Orange hues — advanced deficiency or disease
+      dominant = 'Orange-Brown';
+    } else if (dominantHueRange >= 0 && dominantHueRange < 15) {
+      // Red/brown hues — severe disease
       dominant = 'Brownish';
     } else if (dominantHueRange >= 150 && dominantHueRange < 210) {
-      // Cyan-blue (unlikely for leaf)
+      // Cyan — rare, treat as dark green
       dominant = 'Dark Green';
     } else {
       dominant = 'Green';
     }
 
-    // More specific labels based on combined analysis
-    if (greenRatio > 0.6 && avgSat > 0.3) dominant = 'Deep Green';
-    else if (greenRatio > 0.5 && avgSat > 0.2) dominant = 'Vibrant Green';
-    else if (greenRatio > 0.4) dominant = 'Green';
-    else if (greenRatio > 0.35) dominant = 'Mixed Green';
+    // More specific labels for green leaves
+    if (isGreenLeaf) {
+      if (greenRatio > 0.6 && avgSat > 0.3) dominant = 'Deep Green';
+      else if (greenRatio > 0.5 && avgSat > 0.2) dominant = 'Vibrant Green';
+      else if (greenRatio > 0.4) dominant = 'Green';
+      else if (greenRatio > 0.35) dominant = 'Mixed Green';
+    }
   }
 
   return {
