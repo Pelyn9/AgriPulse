@@ -1,23 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="AgriPulse">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#059669"/>
-      <stop offset="100%" stop-color="#047857"/>
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#15803d"/>
     </linearGradient>
-    <linearGradient id="leaf" x1="160" y1="100" x2="370" y2="420" gradientUnits="userSpaceOnUse">
+    <linearGradient id="leafGrad" x1="180" y1="70" x2="370" y2="450" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#bbf7d0"/>
-      <stop offset="100%" stop-color="#6ee7b7"/>
+      <stop offset="50%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#16a34a"/>
     </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
   </defs>
+
   <rect width="512" height="512" fill="url(#bg)"/>
-  <circle cx="256" cy="230" r="140" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5" stroke-dasharray="10 10"/>
-  <path d="M256 90c-80 38-134 107-134 192 0 48 32 80 75 88 54 10 118-28 145-92 24-58 0-123-86-188z" fill="url(#leaf)"/>
-  <path d="M187 348c48-85 91-150 139-203" fill="none" stroke="#059669" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
-  <path d="M213 290c35 4 65-3 91-24" fill="none" stroke="#059669" stroke-width="11" stroke-linecap="round" opacity="0.6"/>
-  <path d="M192 325c27 4 51-1 73-16" fill="none" stroke="#059669" stroke-width="11" stroke-linecap="round" opacity="0.6"/>
-  <circle cx="322" cy="178" r="11" fill="#fbbf24" opacity="0.9"/>
-  <circle cx="290" cy="135" r="8" fill="#f97316" opacity="0.8"/>
-  <circle cx="348" cy="216" r="7" fill="#ef4444" opacity="0.7"/>
-  <circle cx="256" cy="436" r="42" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="4"/>
-  <path d="M240 426l10 10 22-22" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+
+  <g filter="url(#shadow)">
+    <path d="M256 64 C216 120, 156 178, 140 256 C124 334, 148 386, 188 414 C228 442, 284 442, 320 414 C356 386, 372 334, 356 256 C340 178, 296 120, 256 64Z" fill="url(#leafGrad)"/>
+    <path d="M256 88 C252 144, 238 216, 228 288 C218 344, 224 384, 234 414" fill="none" stroke="#15803d" stroke-width="6" stroke-linecap="round" opacity="0.7"/>
+    <path d="M256 128 C284 148, 310 178, 326 208" fill="none" stroke="#15803d" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+    <path d="M250 184 C222 204, 190 232, 172 258" fill="none" stroke="#15803d" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+    <path d="M244 240 C272 256, 300 284, 316 312" fill="none" stroke="#15803d" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+    <path d="M238 296 C210 312, 180 340, 164 366" fill="none" stroke="#15803d" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+  </g>
+
+  <circle cx="290" cy="168" r="12" fill="#92400e" opacity="0.85"/>
+  <circle cx="290" cy="168" r="5" fill="#a16207" opacity="0.6"/>
+  <circle cx="212" cy="270" r="10" fill="#78350f" opacity="0.8"/>
+  <circle cx="212" cy="270" r="4" fill="#a16207" opacity="0.5"/>
+  <circle cx="298" cy="300" r="8" fill="#92400e" opacity="0.75"/>
+
+  <circle cx="336" cy="140" r="58" fill="none" stroke="white" stroke-width="10" opacity="0.9"/>
+  <circle cx="336" cy="140" r="58" fill="rgba(255,255,255,0.08)"/>
+  <line x1="376" y1="180" x2="420" y2="224" stroke="white" stroke-width="11" stroke-linecap="round" opacity="0.9"/>
+
+  <circle cx="336" cy="140" r="22" fill="none" stroke="#facc15" stroke-width="4" opacity="0.9"/>
+  <line x1="336" y1="114" x2="336" y2="124" stroke="#facc15" stroke-width="3" opacity="0.8"/>
+  <line x1="336" y1="156" x2="336" y2="166" stroke="#facc15" stroke-width="3" opacity="0.8"/>
+  <line x1="310" y1="140" x2="320" y2="140" stroke="#facc15" stroke-width="3" opacity="0.8"/>
+  <line x1="352" y1="140" x2="362" y2="140" stroke="#facc15" stroke-width="3" opacity="0.8"/>
 </svg>
