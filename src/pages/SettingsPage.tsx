@@ -1,8 +1,10 @@
-import { Bell, BookOpen, Cloud, Database, FlaskConical, Info, Languages, Leaf, LogOut, Moon, Sun, Trash2, Wheat, type LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, BookOpen, Cloud, Database, FlaskConical, Info, Languages, Leaf, LogOut, Moon, RefreshCw, Sun, Trash2, Wheat, type LucideIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { PageHeader } from '../components/PageHeader';
+import { APP_VERSION } from '../config/version';
 import { logout } from '../services/authService';
+import { checkForUpdate, type UpdateResult } from '../services/updateService';
 import { useAppStore } from '../store/appStore';
 import { useScanStore } from '../store/scanStore';
 import type { PredictionType, ThemePreference } from '../types';
@@ -23,6 +25,26 @@ export function SettingsPage() {
   const scans = useScanStore((state) => state.scans);
   const clearAll = useScanStore((state) => state.clearAll);
   const [confirmClear, setConfirmClear] = useState(false);
+  const setUpdateInfo = useAppStore((state) => state.setUpdateInfo);
+  const setShowUpdateDialog = useAppStore((state) => state.setShowUpdateDialog);
+
+  const [updateState, setUpdateState] = useState<'checking' | 'up-to-date' | 'update-available'>('checking');
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const result = await checkForUpdate(APP_VERSION);
+      if (!active) return;
+      if (result.available) {
+        setLatestVersion(result.version);
+        setUpdateState('update-available');
+      } else {
+        setUpdateState('up-to-date');
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -49,6 +71,38 @@ export function SettingsPage() {
               {theme.label}
             </button>
           ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-field-100 text-field-700 dark:bg-field-500/15 dark:text-field-100">
+            <RefreshCw className={cn('h-5 w-5', updateState === 'checking' && 'animate-spin')} />
+          </span>
+          <div className="flex-1">
+            <h2 className="text-sm font-black text-slate-950 dark:text-white">App Update</h2>
+            <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {updateState === 'checking' && 'Checking for updates...'}
+              {updateState === 'up-to-date' && `App is up to date — v${APP_VERSION}`}
+              {updateState === 'update-available' && `Update available — v${latestVersion}`}
+            </p>
+          </div>
+          {updateState === 'update-available' && (
+            <button
+              type="button"
+              onClick={async () => {
+                const result = await checkForUpdate(APP_VERSION);
+                if (result.available) {
+                  setUpdateInfo({ version: result.version!, apkUrl: result.apkUrl!, releaseNotes: result.releaseNotes || '' });
+                  setShowUpdateDialog(true);
+                }
+              }}
+              className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-green-600 px-4 py-2 text-xs font-black text-white dark:bg-green-500"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Update
+            </button>
+          )}
         </div>
       </section>
 

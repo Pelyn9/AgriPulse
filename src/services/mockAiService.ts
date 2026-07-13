@@ -882,6 +882,8 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
   const step = Math.max(1, Math.floor(total / 5000));
 
   let greenCount = 0;
+  let darkGreenCount = 0;
+  let brightGreenCount = 0;
   let totalHue = 0;
   let totalSat = 0;
   let totalVal = 0;
@@ -900,7 +902,12 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
     const hueBin = Math.floor(h / 30) % 12;
     hueBins[hueBin]++;
 
-    if (g > r && g > b && g > 60) greenCount++;
+    // Strict green: must be clearly dominant channel AND saturated enough
+    if (g > r + 10 && g > b + 10 && g > 80 && s > 0.15) {
+      greenCount++;
+      if (s > 0.3 && v < 0.6) darkGreenCount++;
+      if (s > 0.2 && v >= 0.5) brightGreenCount++;
+    }
   }
 
   const avgHue = sampled > 0 ? totalHue / sampled : 0;
@@ -919,9 +926,15 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
   }
   const dominantHueRange = maxBin * 30;
 
+  // Strict leaf detection: green must be dominant color AND in green hue range
+  const isGreenHue = dominantHueRange >= 60 && dominantHueRange <= 160;
+  const hasGreenDominance = greenRatio > 0.35;
+  const hasLeafLikeHue = avgHue >= 60 && avgHue <= 160;
+  const hasGoodSaturation = avgSat > 0.15;
+  const isLeaf = isGreenHue && hasGreenDominance && hasLeafLikeHue && hasGoodSaturation;
+
   // Determine dominant color name
-  let dominant = 'Unknown';
-  const isLeaf = greenRatio > 0.25 || (avgHue >= 70 && avgHue <= 170 && avgSat > 0.1);
+  let dominant = 'Non-leaf';
 
   if (isLeaf) {
     if (avgSat < 0.15) {
@@ -950,9 +963,7 @@ function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
     if (greenRatio > 0.6 && avgSat > 0.3) dominant = 'Deep Green';
     else if (greenRatio > 0.5 && avgSat > 0.2) dominant = 'Vibrant Green';
     else if (greenRatio > 0.4) dominant = 'Green';
-    else if (greenRatio > 0.25) dominant = 'Mixed Green';
-  } else {
-    dominant = 'Non-leaf';
+    else if (greenRatio > 0.35) dominant = 'Mixed Green';
   }
 
   return {
