@@ -1,13 +1,15 @@
-import { Camera, ImagePlus, RefreshCw, ScanLine, Video } from 'lucide-react';
+import { Camera, ImagePlus, RefreshCw, ScanLine, Video, Bug, Heart, Activity } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { RefObject } from 'react';
 import type { AiResult } from '../types';
+import type { LiveAnalysisResult } from '../services/mockAiService';
 
 interface CameraCardProps {
   cameraStarted: boolean;
   cameraLoading?: boolean;
   cameraMinimized?: boolean;
   liveResult?: AiResult | null;
+  liveAnalysis?: LiveAnalysisResult | null;
   previewImage?: string;
   resultLabel?: string;
   videoRef?: RefObject<HTMLVideoElement | null>;
@@ -17,11 +19,26 @@ interface CameraCardProps {
   onRetake: () => void;
 }
 
+function HealthBar({ score }: { score: number }) {
+  const color = score >= 70 ? 'bg-field-400' : score >= 40 ? 'bg-amber-400' : 'bg-red-400';
+  const label = score >= 70 ? 'Good' : score >= 40 ? 'Fair' : 'Poor';
+  return (
+    <div className="flex items-center gap-2">
+      <Heart className="h-3 w-3 text-white/70" />
+      <div className="relative h-1.5 flex-1 rounded-full bg-white/20">
+        <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${color}`} style={{ width: `${score}%` }} />
+      </div>
+      <span className="text-[10px] font-black tabular-nums text-white">{score}</span>
+    </div>
+  );
+}
+
 export function CameraCard({
   cameraStarted,
   cameraLoading = false,
   cameraMinimized = false,
   liveResult,
+  liveAnalysis,
   previewImage,
   resultLabel,
   videoRef,
@@ -48,22 +65,64 @@ export function CameraCard({
                 Align the rice leaf inside the focus area
               </p>
             </div>
-            {liveResult && (
-              <div className="absolute left-3 right-3 top-3 z-20 rounded-2xl bg-black/55 p-3 text-white backdrop-blur-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-black uppercase tracking-wider opacity-80">
-                    {liveResult.confidence}% Confidence
-                  </span>
-                  <span className={cn(
-                    'rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-wider',
-                    liveResult.prediction === 'Healthy'
-                      ? 'bg-field-500/60 text-white'
-                      : 'bg-harvest-500/60 text-white',
-                  )}>
-                    {liveResult.prediction === 'Healthy' ? 'Healthy' : liveResult.prediction === 'Rice Leaf Diseases' ? 'Disease' : 'Deficiency'}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm font-bold leading-tight">{liveResult.prediction}</p>
+            {(liveResult || liveAnalysis) && (
+              <div className="absolute left-2 right-2 top-2 z-20 space-y-2">
+                {liveAnalysis && (
+                  <div className="rounded-2xl bg-black/60 p-3 text-white backdrop-blur-md">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-3.5 w-3.5 text-white/60" />
+                        <span className="text-xs font-black uppercase tracking-wider text-white/70">Live Analysis</span>
+                      </div>
+                      <span className={cn(
+                        'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                        liveAnalysis.status === 'healthy' ? 'bg-field-500/60 text-white'
+                          : liveAnalysis.status === 'deficient' ? 'bg-purple-500/60 text-white'
+                          : 'bg-harvest-500/60 text-white',
+                      )}>
+                        {liveAnalysis.status === 'healthy' ? 'Healthy' : liveAnalysis.status === 'deficient' ? 'Deficiency' : 'Disease'}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-black leading-tight">{liveAnalysis.prediction}</p>
+                    <div className="mt-2 space-y-1.5">
+                      <HealthBar score={liveAnalysis.healthScore} />
+                      {liveAnalysis.spotCount > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <Bug className="h-3 w-3 text-harvest-400" />
+                          <span className="text-[11px] font-bold text-white/90">
+                            {liveAnalysis.spotCount} spot{liveAnalysis.spotCount !== 1 ? 's' : ''} detected
+                          </span>
+                          <span className="text-[10px] text-white/50">
+                            ({liveAnalysis.spotSizes.small}s {liveAnalysis.spotSizes.medium > 0 ? `${liveAnalysis.spotSizes.medium}m ` : ''}{liveAnalysis.spotSizes.large > 0 ? `${liveAnalysis.spotSizes.large}l` : ''})
+                          </span>
+                        </div>
+                      )}
+                      {liveAnalysis.spotCount === 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-field-300">No spots detected</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {!liveAnalysis && liveResult && (
+                  <div className="rounded-2xl bg-black/55 p-3 text-white backdrop-blur-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider opacity-80">
+                        {liveResult.confidence}% Confidence
+                      </span>
+                      <span className={cn(
+                        'rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-wider',
+                        liveResult.prediction === 'Healthy'
+                          ? 'bg-field-500/60 text-white'
+                          : 'bg-harvest-500/60 text-white',
+                      )}>
+                        {liveResult.prediction === 'Healthy' ? 'Healthy' : liveResult.prediction === 'Rice Leaf Diseases' ? 'Disease' : 'Deficiency'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-bold leading-tight">{liveResult.prediction}</p>
+                  </div>
+                )}
               </div>
             )}
           </>

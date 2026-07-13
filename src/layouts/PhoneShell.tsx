@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { SyncProgressDialog } from '../components/SyncProgressDialog';
 import { SyncPromptModal } from '../components/SyncPromptModal';
 import { ToastViewport } from '../components/ToastViewport';
+import { UpdateDialog } from '../components/UpdateDialog';
 
 interface PhoneShellProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ export function PhoneShell({ children }: PhoneShellProps) {
         <div className="relative flex h-full flex-col">{children}</div>
         <SyncPromptModal />
         <SyncProgressDialog />
+        <UpdateDialog />
         <ToastViewport />
       </div>
     </div>

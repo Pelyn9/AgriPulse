@@ -6,6 +6,7 @@ import { LoadingDialog } from '../components/LoadingDialog';
 import { PageHeader } from '../components/PageHeader';
 import { TrainingContributionPrompt } from '../components/TrainingContributionPrompt';
 import { analyzeRiceLeaf, analyzeRiceLeafFast } from '../services/aiService';
+import { analyzeRiceLeafLive, type LiveAnalysisResult } from '../services/mockAiService';
 import { fetchTips } from '../services/tipsService';
 import { createLeafThumbnail } from '../services/imageService';
 import { useAppStore } from '../store/appStore';
@@ -36,6 +37,7 @@ export function ScanPage() {
   const [resultMinimized, setResultMinimized] = useState(false);
   const [thumbnail, setThumbnail] = useState(createLeafThumbnail());
   const [liveResult, setLiveResult] = useState<AiResult | null>(null);
+  const [liveAnalysis, setLiveAnalysis] = useState<LiveAnalysisResult | null>(null);
   const [scanImageBlob, setScanImageBlob] = useState<Blob | null>(null);
   const [showTrainingPrompt, setShowTrainingPrompt] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -112,6 +114,7 @@ export function ScanPage() {
       setCameraStarted(true);
       setCameraLoading(false);
       setLiveResult(null);
+      setLiveAnalysis(null);
       addToast({ title: 'Camera active', tone: 'info' });
 
       liveIntervalRef.current = setInterval(async () => {
@@ -133,6 +136,8 @@ export function ScanPage() {
 
           const aiResult = await analyzeRiceLeafFast(blob);
           setLiveResult(aiResult);
+          const liveData = await analyzeRiceLeafLive(blob);
+          setLiveAnalysis(liveData);
         } finally {
           analysisBusyRef.current = false;
         }
@@ -158,6 +163,7 @@ export function ScanPage() {
     const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
     stopCamera();
     setLiveResult(null);
+    setLiveAnalysis(null);
     setAnalyzing(true);
     setLoadingStage(0);
     const reader = new FileReader();
@@ -189,6 +195,7 @@ export function ScanPage() {
     setScanImageBlob(file);
     stopCamera();
     setLiveResult(null);
+    setLiveAnalysis(null);
     setCameraMinimized(false);
     setAnalyzing(true);
     setLoadingStage(0);
@@ -235,6 +242,7 @@ export function ScanPage() {
     stopCamera();
     setResult(null);
     setLiveResult(null);
+    setLiveAnalysis(null);
     setScanImageBlob(null);
     setShowTrainingPrompt(false);
     setThumbnail(createLeafThumbnail());
@@ -260,6 +268,7 @@ export function ScanPage() {
         cameraLoading={cameraLoading}
         cameraMinimized={cameraMinimized}
         liveResult={liveResult}
+        liveAnalysis={liveAnalysis}
         previewImage={thumbnail}
         resultLabel={result?.prediction}
         videoRef={videoRef}

@@ -3,6 +3,12 @@ import { defaultSettings, getSettings, saveSettings } from '../offline/database'
 import type { AppSettings, SyncProgress, ToastMessage, UserSession } from '../types';
 import { createId } from '../utils/id';
 
+interface UpdateInfo {
+  version: string;
+  apkUrl: string;
+  releaseNotes: string;
+}
+
 interface AppState {
   isOnline: boolean;
   settings: AppSettings;
@@ -10,6 +16,9 @@ interface AppState {
   showSyncPrompt: boolean;
   syncProgress: SyncProgress;
   toasts: ToastMessage[];
+  updateInfo: UpdateInfo | null;
+  showUpdateDialog: boolean;
+  updateProgress: number;
   initializeSettings: () => Promise<void>;
   setOnline: (isOnline: boolean) => void;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -18,6 +27,9 @@ interface AppState {
   setSyncProgress: (progress: SyncProgress) => void;
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
+  setUpdateInfo: (info: UpdateInfo | null) => void;
+  setShowUpdateDialog: (show: boolean) => void;
+  setUpdateProgress: (progress: number) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -31,6 +43,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     total: 0,
   },
   toasts: [],
+  updateInfo: null,
+  showUpdateDialog: false,
+  updateProgress: -1,
   initializeSettings: async () => {
     const settings = await getSettings();
     set({ settings });
@@ -56,4 +71,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       toasts: state.toasts.filter((toast) => toast.id !== id),
     })),
+  setUpdateInfo: (updateInfo) => set({ updateInfo }),
+  setShowUpdateDialog: (showUpdateDialog) => set({ showUpdateDialog }),
+  setUpdateProgress: (updateProgress) => set({ updateProgress }),
 }));

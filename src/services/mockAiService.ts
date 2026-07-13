@@ -826,6 +826,167 @@ async function getCachedRef() {
   return { features: cachedRefFeatures, labels: cachedRefLabels, scalerMean: cachedScalerMean, scalerScale: cachedScalerScale };
 }
 
+export interface LiveAnalysisResult {
+  prediction: string;
+  confidence: number;
+  spotCount: number;
+  spotSizes: { small: number; medium: number; large: number };
+  healthScore: number;
+  status: 'healthy' | 'diseased' | 'deficient';
+}
+
+function isDiseasePixel(r: number, g: number, b: number): { type: 'brown' | 'gray' | 'yellow' | 'reddish' | null } {
+  const [h, s, v] = rgbToHsv(r, g, b);
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  if (r > 120 && g < 140 && b < 110 && r > g + 15 && r - b > 30 && lum < 160) return { type: 'brown' };
+  if (Math.abs(r - g) < 25 && Math.abs(g - b) < 25 && r > 110 && r < 230 && s < 0.35) return { type: 'gray' };
+  if (r > 170 && g > 150 && b < 130 && r - b > 40 && g - b > 30) return { type: 'yellow' };
+  if (r > 140 && g < 120 && b < 100 && h > 340 && r - g > 25) return { type: 'reddish' };
+  return { type: null };
+}
+
+function detectSpots(imageData: ImageData): { count: number; sizes: { small: number; medium: number; large: number } } {
+  const { data, width, height } = imageData;
+  const step = 2;
+  const w = Math.ceil(width / step);
+  const h = Math.ceil(height / step);
+  const labels = new Int32Array(w * h);
+
+  const sampled: boolean[] = new Array(w * h);
+  for (let sy = 0; sy < h; sy++) {
+    for (let sx = 0; sx < w; sx++) {
+      const x = sx * step;
+      const y = sy * step;
+      const idx = (y * width + x) * 4;
+      const { type } = isDiseasePixel(data[idx], data[idx + 1], data[idx + 2]);
+      sampled[sy * w + sx] = type !== null;
+    }
+  }
+
+  let nextLabel = 1;
+  const parent = new Int32Array(w * h + 1);
+  for (let i = 0; i <= w * h; i++) parent[i] = i;
+
+  function find(x: number): number {
+    while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+    return x;
+  }
+  function union(a: number, b: number) {
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent[ra] = rb;
+  }
+
+  for (let sy = 0; sy < h; sy++) {
+    for (let sx = 0; sx < w; sx++) {
+      const si = sy * w + sx;
+      if (!sampled[si]) continue;
+      if (sx > 0 && sampled[si - 1]) union(si, si - 1);
+      if (sy > 0 && sampled[si - w]) union(si, si - w);
+    }
+  }
+
+  const rootSizes: Record<number, number> = {};
+  for (let i = 0; i < w * h; i++) {
+    if (!sampled[i]) continue;
+    const root = find(i);
+    rootSizes[root] = (rootSizes[root] || 0) + 1;
+  }
+
+  let count = 0;
+  const sizes = { small: 0, medium: 0, large: 0 };
+  const minSize = 5;
+  for (const sz of Object.values(rootSizes)) {
+    if (sz >= minSize) {
+      count++;
+      if (sz < 30) sizes.small++;
+      else if (sz < 100) sizes.medium++;
+      else sizes.large++;
+    }
+  }
+  return { count, sizes };
+}
+
+function calculateHealthScore(imageData: ImageData, spotCount: number): number {
+  const { data, width, height } = imageData;
+  const pixelCount = width * height;
+  const step = Math.max(1, Math.floor(pixelCount / 4000));
+
+  let greenPixels = 0;
+  let diseasePixels = 0;
+  let paleGreenPixels = 0;
+  let orangePixels = 0;
+  let purplePixels = 0;
+
+  for (let i = 0; i < pixelCount; i += step) {
+    const idx = i * 4;
+    const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+    const [h, s, v] = rgbToHsv(r, g, b);
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    if (g > r && g > b && g > 80) greenPixels++;
+
+    const { type } = isDiseasePixel(r, g, b);
+    if (type) diseasePixels++;
+
+    if (r > 150 && g > 140 && b < 70 && g > r * 0.8) paleGreenPixels++;
+    if (r > 170 && g > 90 && g < 160 && b < 70 && h > 15 && h < 50) orangePixels++;
+    if (g > r && r > b + 10 && b > r * 0.5 && g > 40 && s > 0.15) purplePixels++;
+  }
+
+  const sampled = Math.ceil(pixelCount / step);
+  const greenRatio = greenPixels / sampled;
+  const diseaseRatio = diseasePixels / sampled;
+  const paleRatio = paleGreenPixels / sampled;
+  const orangeRatio = orangePixels / sampled;
+  const purpleRatio = purplePixels / sampled;
+
+  let score = 100;
+  score -= Math.min(40, Math.round(diseaseRatio * 200));
+  score -= Math.min(30, spotCount * 3);
+  score -= Math.min(20, Math.round((1 - greenRatio) * 30));
+  score -= Math.min(10, Math.round((paleRatio + orangeRatio + purpleRatio) * 80));
+
+  return Math.max(0, Math.min(100, score));
+}
+
+export async function analyzeRiceLeafLive(imageBlob: Blob): Promise<LiveAnalysisResult> {
+  try {
+    const [ref, bitmap] = await Promise.all([getCachedRef(), createImageBitmap(imageBlob)]);
+    const canvas = document.createElement('canvas');
+    canvas.width = 160;
+    canvas.height = 160;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0, 160, 160);
+    const imageData = ctx.getImageData(0, 0, 160, 160);
+    bitmap.close();
+
+    const features = extractFeaturesFast(imageData);
+    const scaled = standardize(features, ref.scalerMean, ref.scalerScale);
+    const knnResult = knnPredictFast(scaled, ref.features, ref.labels, 5);
+    const ensemble = ensemblePredict(knnResult, imageData);
+
+    const { count: spotCount, sizes: spotSizes } = detectSpots(imageData);
+    const healthScore = calculateHealthScore(imageData, spotCount);
+
+    const isDeficient = ensemble.prediction.includes('Deficiency');
+    const isDiseased = ['Brown Spot', 'Rice Blast', 'Bacterial Leaf Blight', 'Rice Leaf Diseases'].includes(ensemble.prediction);
+    const status: 'healthy' | 'diseased' | 'deficient' =
+      ensemble.prediction === 'Healthy' ? 'healthy' : isDeficient ? 'deficient' : 'diseased';
+
+    return {
+      prediction: ensemble.prediction,
+      confidence: ensemble.confidence,
+      spotCount,
+      spotSizes,
+      healthScore,
+      status,
+    };
+  } catch (err) {
+    console.warn('Live analysis failed:', err);
+    return { prediction: 'Healthy', confidence: 50, spotCount: 0, spotSizes: { small: 0, medium: 0, large: 0 }, healthScore: 75, status: 'healthy' };
+  }
+}
+
 export async function analyzeRiceLeafFast(imageBlob: Blob): Promise<AiResult> {
   try {
     const [ref, bitmap] = await Promise.all([getCachedRef(), createImageBitmap(imageBlob)]);

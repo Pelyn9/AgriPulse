@@ -4,6 +4,7 @@ import { AppRoutes } from './routes/AppRoutes';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
 import { useSync } from './hooks/useSync';
 import { useTheme } from './hooks/useTheme';
+import { useUpdateChecker } from './hooks/useUpdateChecker';
 import { useAppStore } from './store/appStore';
 import { useScanStore } from './store/scanStore';
 
@@ -17,6 +18,7 @@ export default function App() {
 
   useConnectionStatus();
   useTheme();
+  useUpdateChecker();
 
   useEffect(() => {
     initializeSettings();
