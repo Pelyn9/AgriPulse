@@ -26,9 +26,9 @@ export function SplashPage() {
         transition={{ duration: 0.45, delay: 0.16 }}
         className="mt-8"
       >
-        <h1 className="text-4xl font-black tracking-normal text-slate-950 dark:text-white">RiceLeaf AI</h1>
+        <h1 className="text-4xl font-black tracking-normal text-slate-950 dark:text-white">AgriPulse</h1>
         <p className="mt-4 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300">
-          AI-Powered Rice Leaf Nutrient Deficiency Detection and Fertilizer Recommendation
+          AI-Powered Rice Leaf Disease Detection & Fertilizer Recommendation
         </p>
       </motion.div>
       <motion.div

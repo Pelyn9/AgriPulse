@@ -1,5 +1,7 @@
-import { Camera, ImagePlus, RefreshCw, ScanLine, Video, Bug, Heart, Activity } from 'lucide-react';
+import { Camera, ImagePlus, RefreshCw, ScanLine, Video, Bug, Heart, Activity, Leaf, AlertTriangle } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
 import { cn } from '../utils/cn';
+import { ScannerOverlay } from './ScannerOverlay';
 import type { RefObject } from 'react';
 import type { AiResult } from '../types';
 import type { LiveAnalysisResult } from '../services/mockAiService';
@@ -47,9 +49,24 @@ export function CameraCard({
   onUpload,
   onRetake,
 }: CameraCardProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dims, setDims] = useState({ w: 400, h: 500 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) setDims({ w: Math.round(width), h: Math.round(height) });
+      }
+    });
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <section className="rounded-[2rem] border border-field-200/70 bg-field-950 p-3 shadow-glass dark:border-white/10 dark:bg-[#0d1210]">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-[1.45rem] bg-gradient-to-br from-field-900 via-field-700 to-harvest-500 dark:bg-none dark:bg-[#111611]">
+      <div ref={containerRef} className="relative aspect-[4/5] overflow-hidden rounded-[1.45rem] bg-gradient-to-br from-field-900 via-field-700 to-harvest-500 dark:bg-none dark:bg-[#111611]">
         {cameraStarted && !cameraMinimized ? (
           <>
             <video
@@ -59,8 +76,8 @@ export function CameraCard({
               muted
               className="absolute inset-0 h-full w-full object-cover"
             />
-            <div className="absolute inset-x-10 top-16 bottom-16 rounded-[2rem] border-2 border-dashed border-white/45 z-10" />
-            <div className="absolute bottom-6 left-0 right-0 z-10 text-center">
+            <ScannerOverlay analysis={liveAnalysis ?? null} width={dims.w} height={dims.h} />
+            <div className="absolute bottom-6 left-0 right-0 z-20 text-center">
               <p className="text-sm font-semibold text-white drop-shadow-lg">
                 Align the rice leaf inside the focus area
               </p>
@@ -74,35 +91,62 @@ export function CameraCard({
                         <Activity className="h-3.5 w-3.5 text-white/60" />
                         <span className="text-xs font-black uppercase tracking-wider text-white/70">Live Analysis</span>
                       </div>
-                      <span className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
-                        liveAnalysis.status === 'healthy' ? 'bg-field-500/60 text-white'
-                          : liveAnalysis.status === 'deficient' ? 'bg-purple-500/60 text-white'
-                          : 'bg-harvest-500/60 text-white',
-                      )}>
-                        {liveAnalysis.status === 'healthy' ? 'Healthy' : liveAnalysis.status === 'deficient' ? 'Deficiency' : 'Disease'}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-sm font-black leading-tight">{liveAnalysis.prediction}</p>
-                    <div className="mt-2 space-y-1.5">
-                      <HealthBar score={liveAnalysis.healthScore} />
-                      {liveAnalysis.spotCount > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <Bug className="h-3 w-3 text-harvest-400" />
-                          <span className="text-[11px] font-bold text-white/90">
-                            {liveAnalysis.spotCount} spot{liveAnalysis.spotCount !== 1 ? 's' : ''} detected
-                          </span>
-                          <span className="text-[10px] text-white/50">
-                            ({liveAnalysis.spotSizes.small}s {liveAnalysis.spotSizes.medium > 0 ? `${liveAnalysis.spotSizes.medium}m ` : ''}{liveAnalysis.spotSizes.large > 0 ? `${liveAnalysis.spotSizes.large}l` : ''})
-                          </span>
-                        </div>
-                      )}
-                      {liveAnalysis.spotCount === 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-field-300">No spots detected</span>
-                        </div>
+                      {!liveAnalysis.leafColor.isLeaf ? (
+                        <span className="flex items-center gap-1 rounded-full bg-amber-500/60 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+                          <AlertTriangle className="h-2.5 w-2.5" /> Not a Leaf
+                        </span>
+                      ) : (
+                        <span className={cn(
+                          'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                          liveAnalysis.status === 'healthy' ? 'bg-field-500/60 text-white'
+                            : liveAnalysis.status === 'deficient' ? 'bg-purple-500/60 text-white'
+                            : 'bg-harvest-500/60 text-white',
+                        )}>
+                          {liveAnalysis.status === 'healthy' ? 'Healthy' : liveAnalysis.status === 'deficient' ? 'Deficiency' : 'Disease'}
+                        </span>
                       )}
                     </div>
+
+                    {!liveAnalysis.leafColor.isLeaf ? (
+                      <p className="mt-1.5 text-xs font-bold text-amber-300">
+                        Point the camera at a rice leaf
+                      </p>
+                    ) : (
+                      <>
+                        <p className="mt-1.5 text-sm font-black leading-tight">{liveAnalysis.prediction}</p>
+
+                        {/* Leaf color info */}
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <Leaf className="h-3 w-3 text-green-400" />
+                          <span className="text-[10px] font-bold text-white/80">
+                            Leaf color: <span className="text-green-300">{liveAnalysis.leafColor.dominant}</span>
+                          </span>
+                          <span className="text-[10px] text-white/40">
+                            ({liveAnalysis.leafColor.greenRatio}% green)
+                          </span>
+                        </div>
+
+                        <div className="mt-2 space-y-1.5">
+                          <HealthBar score={liveAnalysis.healthScore} />
+                          {liveAnalysis.spotCount > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Bug className="h-3 w-3 text-harvest-400" />
+                              <span className="text-[11px] font-bold text-white/90">
+                                {liveAnalysis.spotCount} spot{liveAnalysis.spotCount !== 1 ? 's' : ''} detected
+                              </span>
+                              <span className="text-[10px] text-white/50">
+                                ({liveAnalysis.spotSizes.small}s {liveAnalysis.spotSizes.medium > 0 ? `${liveAnalysis.spotSizes.medium}m ` : ''}{liveAnalysis.spotSizes.large > 0 ? `${liveAnalysis.spotSizes.large}l` : ''})
+                              </span>
+                            </div>
+                          )}
+                          {liveAnalysis.spotCount === 0 && liveAnalysis.status === 'healthy' && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold text-field-300">No spots - leaf looks healthy</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
                 {!liveAnalysis && liveResult && (
@@ -145,7 +189,7 @@ export function CameraCard({
                 Start the preview or upload a leaf image.
               </p>
             </div>
-            <div className="absolute inset-x-10 top-16 bottom-16 rounded-[2rem] border-2 border-dashed border-white/45" />
+            <ScannerOverlay analysis={null} width={dims.w} height={dims.h} />
           </>
         )}
       </div>

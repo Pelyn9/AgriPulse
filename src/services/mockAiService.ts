@@ -566,6 +566,8 @@ function classifyByRules(imageData: ImageData): { prediction: string; confidence
   const step = Math.max(1, Math.floor(pixelCount / 8000));
 
   let greenPixels = 0;
+  let darkGreenPixels = 0;
+  let brightGreenPixels = 0;
   let paleGreenPixels = 0;
   let purplePixels = 0;
   let brownPixels = 0;
@@ -588,11 +590,17 @@ function classifyByRules(imageData: ImageData): { prediction: string; confidence
 
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
-      if (g > r && g > b && g > 100 && r > 50) greenPixels++;
+      // Green detection - broad
+      if (g > r && g > b && g > 60) greenPixels++;
+      // Dark green (healthy deep green)
+      if (g > r && g > b && g > 80 && s > 0.2 && v < 0.7) darkGreenPixels++;
+      // Bright green (healthy vibrant)
+      if (g > r && g > b && g > 120 && s > 0.25) brightGreenPixels++;
 
-      if (r > 160 && g > 150 && b > 60 && g > r * 0.85 && r > g * 0.7) paleGreenPixels++;
+      // Pale green - more strict: must be distinctly yellowish-green, not just bright green
+      if (r > 170 && g > 160 && b < 80 && g > r * 0.9 && r > g * 0.8 && s < 0.5) paleGreenPixels++;
 
-      if (g > r && g > b && r > b + 15 && b > r * 0.6 && g > 50) purplePixels++;
+      if (g > r && g > b && r > b + 15 && b > r * 0.6 && g > 50 && s > 0.2) purplePixels++;
 
       if (r > 120 && g < 140 && b < 110 && r > g + 15 && r - b > 30 && lum < 160) brownPixels++;
 
@@ -611,6 +619,8 @@ function classifyByRules(imageData: ImageData): { prediction: string; confidence
   }
 
   const greenRatio = greenPixels / totalPixels;
+  const darkGreenRatio = darkGreenPixels / totalPixels;
+  const brightGreenRatio = brightGreenPixels / totalPixels;
   const paleGreenRatio = paleGreenPixels / totalPixels;
   const purpleRatio = purplePixels / totalPixels;
   const brownRatio = brownPixels / totalPixels;
@@ -624,7 +634,8 @@ function classifyByRules(imageData: ImageData): { prediction: string; confidence
   const deficiencyScore = paleGreenRatio + purpleRatio + orangeRatio;
   const unhealthyScore = diseaseScore + deficiencyScore;
 
-  if (diseaseScore > 0.06 && diseaseScore > deficiencyScore) {
+  // Strong disease signals first
+  if (diseaseScore > 0.08 && diseaseScore > deficiencyScore * 1.5) {
     if (yellowRatio > brownRatio && yellowRatio > grayRatio && yellowRatio > reddishRatio) {
       return { prediction: 'Bacterial Leaf Blight', confidence: Math.min(99, 70 + Math.round(yellowRatio * 200)) };
     }
@@ -634,40 +645,51 @@ function classifyByRules(imageData: ImageData): { prediction: string; confidence
     if (brownRatio > grayRatio && brownRatio > yellowRatio && brownRatio > reddishRatio) {
       return { prediction: 'Brown Spot', confidence: Math.min(99, 65 + Math.round(brownRatio * 150)) };
     }
-    if (reddishRatio > brownRatio && reddishRatio > 0.02) {
+    if (reddishRatio > brownRatio && reddishRatio > 0.03) {
       return { prediction: 'Rice Leaf Diseases', confidence: Math.min(99, 55 + Math.round(reddishRatio * 300)) };
     }
     return { prediction: 'Rice Leaf Diseases', confidence: 60 };
   }
 
-  if (unhealthyScore > 0.1) {
-    if (paleGreenRatio > 0.2 && orangeRatio < 0.03 && purpleRatio < 0.03) {
+  // Clear deficiency signals
+  if (unhealthyScore > 0.15) {
+    if (paleGreenRatio > 0.25 && orangeRatio < 0.03 && purpleRatio < 0.03) {
       return { prediction: 'Nitrogen Deficiency', confidence: Math.min(99, 70 + Math.round(paleGreenRatio * 100)) };
     }
-    if (purpleRatio > 0.08 && orangeRatio < 0.03) {
+    if (purpleRatio > 0.1 && orangeRatio < 0.03) {
       return { prediction: 'Phosphorus Deficiency', confidence: Math.min(99, 65 + Math.round(purpleRatio * 200)) };
     }
-    if (orangeRatio > 0.05 || edgeOrangePixels > 10) {
+    if (orangeRatio > 0.06 || edgeOrangePixels > 15) {
       return { prediction: 'Potassium Deficiency', confidence: Math.min(99, 65 + Math.round((orangeRatio + brownRatio) * 150)) };
     }
   }
 
-  if (greenRatio > 0.5 && unhealthyScore < 0.1) {
-    if (paleGreenRatio > 0.15 && greenRatio < 0.7) {
-      return { prediction: 'Nitrogen Deficiency', confidence: Math.min(85, 60 + Math.round(paleGreenRatio * 80)) };
-    }
-    return { prediction: 'Healthy', confidence: Math.min(99, 75 + Math.round(greenRatio * 30)) };
+  // Healthy leaf: strong green dominance AND very low disease signals
+  const dominantGreen = darkGreenRatio + brightGreenRatio;
+  if (greenRatio > 0.45 && diseaseScore < 0.04 && unhealthyScore < 0.08) {
+    return { prediction: 'Healthy', confidence: Math.min(99, 80 + Math.round(dominantGreen * 20)) };
   }
 
-  if (brownRatio > 0.03 || grayRatio > 0.03 || yellowRatio > 0.03) {
-    if (yellowRatio > brownRatio) return { prediction: 'Bacterial Leaf Blight', confidence: 65 };
-    if (grayRatio > brownRatio) return { prediction: 'Rice Blast', confidence: 60 };
-    return { prediction: 'Brown Spot', confidence: 60 };
+  // Moderate green with no strong disease/deficiency
+  if (greenRatio > 0.55 && diseaseScore < 0.06) {
+    return { prediction: 'Healthy', confidence: Math.min(95, 75 + Math.round(greenRatio * 20)) };
   }
 
-  if (paleGreenRatio > 0.1) return { prediction: 'Nitrogen Deficiency', confidence: 55 };
-  if (purpleRatio > 0.05) return { prediction: 'Phosphorus Deficiency', confidence: 55 };
-  if (orangeRatio > 0.03) return { prediction: 'Potassium Deficiency', confidence: 55 };
+  // Weak signals - check for mild issues
+  if (brownRatio > 0.04 || grayRatio > 0.04 || yellowRatio > 0.04) {
+    if (yellowRatio > brownRatio) return { prediction: 'Bacterial Leaf Blight', confidence: 60 };
+    if (grayRatio > brownRatio) return { prediction: 'Rice Blast', confidence: 55 };
+    return { prediction: 'Brown Spot', confidence: 55 };
+  }
+
+  if (paleGreenRatio > 0.15) return { prediction: 'Nitrogen Deficiency', confidence: 55 };
+  if (purpleRatio > 0.06) return { prediction: 'Phosphorus Deficiency', confidence: 55 };
+  if (orangeRatio > 0.04) return { prediction: 'Potassium Deficiency', confidence: 55 };
+
+  // Default: if mostly green, lean healthy
+  if (greenRatio > 0.35) {
+    return { prediction: 'Healthy', confidence: 65 };
+  }
 
   return { prediction: 'Healthy', confidence: 50 };
 }
@@ -826,6 +848,23 @@ async function getCachedRef() {
   return { features: cachedRefFeatures, labels: cachedRefLabels, scalerMean: cachedScalerMean, scalerScale: cachedScalerScale };
 }
 
+export interface SpotBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  type: 'brown' | 'gray' | 'yellow' | 'reddish';
+}
+
+export interface LeafColorInfo {
+  dominant: string;
+  hue: number;
+  saturation: number;
+  brightness: number;
+  greenRatio: number;
+  isLeaf: boolean;
+}
+
 export interface LiveAnalysisResult {
   prediction: string;
   confidence: number;
@@ -833,6 +872,97 @@ export interface LiveAnalysisResult {
   spotSizes: { small: number; medium: number; large: number };
   healthScore: number;
   status: 'healthy' | 'diseased' | 'deficient';
+  spots: SpotBox[];
+  leafColor: LeafColorInfo;
+}
+
+function analyzeLeafColor(imageData: ImageData): LeafColorInfo {
+  const { data, width, height } = imageData;
+  const total = width * height;
+  const step = Math.max(1, Math.floor(total / 5000));
+
+  let greenCount = 0;
+  let totalHue = 0;
+  let totalSat = 0;
+  let totalVal = 0;
+  let sampled = 0;
+  let hueBins = new Array(12).fill(0);
+
+  for (let i = 0; i < total; i += step) {
+    const idx = i * 4;
+    const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+    const [h, s, v] = rgbToHsv(r, g, b);
+    totalHue += h;
+    totalSat += s;
+    totalVal += v;
+    sampled++;
+
+    const hueBin = Math.floor(h / 30) % 12;
+    hueBins[hueBin]++;
+
+    if (g > r && g > b && g > 60) greenCount++;
+  }
+
+  const avgHue = sampled > 0 ? totalHue / sampled : 0;
+  const avgSat = sampled > 0 ? totalSat / sampled : 0;
+  const avgVal = sampled > 0 ? totalVal / sampled : 0;
+  const greenRatio = sampled > 0 ? greenCount / sampled : 0;
+
+  // Find dominant hue bin
+  let maxBin = 0;
+  let maxCount = 0;
+  for (let i = 0; i < 12; i++) {
+    if (hueBins[i] > maxCount) {
+      maxCount = hueBins[i];
+      maxBin = i;
+    }
+  }
+  const dominantHueRange = maxBin * 30;
+
+  // Determine dominant color name
+  let dominant = 'Unknown';
+  const isLeaf = greenRatio > 0.25 || (avgHue >= 70 && avgHue <= 170 && avgSat > 0.1);
+
+  if (isLeaf) {
+    if (avgSat < 0.15) {
+      dominant = avgVal > 0.6 ? 'Pale/Grayish' : 'Dark';
+    } else if (dominantHueRange >= 70 && dominantHueRange <= 150) {
+      // Green hues
+      if (avgSat > 0.4 && avgVal > 0.3 && avgVal < 0.6) dominant = 'Dark Green';
+      else if (avgSat > 0.3 && avgVal >= 0.6) dominant = 'Bright Green';
+      else if (avgSat > 0.15) dominant = 'Light Green';
+      else dominant = 'Muted Green';
+    } else if (dominantHueRange >= 30 && dominantHueRange < 70) {
+      // Yellow-green hues
+      if (avgSat > 0.3) dominant = 'Yellowish-Green';
+      else dominant = 'Pale Yellowish';
+    } else if (dominantHueRange >= 0 && dominantHueRange < 30) {
+      // Red/orange hues
+      dominant = 'Brownish';
+    } else if (dominantHueRange >= 150 && dominantHueRange < 210) {
+      // Cyan-blue (unlikely for leaf)
+      dominant = 'Dark Green';
+    } else {
+      dominant = 'Green';
+    }
+
+    // More specific labels based on combined analysis
+    if (greenRatio > 0.6 && avgSat > 0.3) dominant = 'Deep Green';
+    else if (greenRatio > 0.5 && avgSat > 0.2) dominant = 'Vibrant Green';
+    else if (greenRatio > 0.4) dominant = 'Green';
+    else if (greenRatio > 0.25) dominant = 'Mixed Green';
+  } else {
+    dominant = 'Non-leaf';
+  }
+
+  return {
+    dominant,
+    hue: Math.round(avgHue),
+    saturation: Math.round(avgSat * 100),
+    brightness: Math.round(avgVal * 100),
+    greenRatio: Math.round(greenRatio * 100),
+    isLeaf,
+  };
 }
 
 function isDiseasePixel(r: number, g: number, b: number): { type: 'brown' | 'gray' | 'yellow' | 'reddish' | null } {
@@ -845,7 +975,7 @@ function isDiseasePixel(r: number, g: number, b: number): { type: 'brown' | 'gra
   return { type: null };
 }
 
-function detectSpots(imageData: ImageData): { count: number; sizes: { small: number; medium: number; large: number } } {
+function detectSpots(imageData: ImageData): { count: number; sizes: { small: number; medium: number; large: number }; boxes: SpotBox[] } {
   const { data, width, height } = imageData;
   const step = 2;
   const w = Math.ceil(width / step);
@@ -853,6 +983,7 @@ function detectSpots(imageData: ImageData): { count: number; sizes: { small: num
   const labels = new Int32Array(w * h);
 
   const sampled: boolean[] = new Array(w * h);
+  const sampledTypes: ('brown' | 'gray' | 'yellow' | 'reddish' | null)[] = new Array(w * h);
   for (let sy = 0; sy < h; sy++) {
     for (let sx = 0; sx < w; sx++) {
       const x = sx * step;
@@ -860,6 +991,7 @@ function detectSpots(imageData: ImageData): { count: number; sizes: { small: num
       const idx = (y * width + x) * 4;
       const { type } = isDiseasePixel(data[idx], data[idx + 1], data[idx + 2]);
       sampled[sy * w + sx] = type !== null;
+      sampledTypes[sy * w + sx] = type;
     }
   }
 
@@ -886,24 +1018,47 @@ function detectSpots(imageData: ImageData): { count: number; sizes: { small: num
   }
 
   const rootSizes: Record<number, number> = {};
-  for (let i = 0; i < w * h; i++) {
-    if (!sampled[i]) continue;
-    const root = find(i);
-    rootSizes[root] = (rootSizes[root] || 0) + 1;
+  const rootMinX: Record<number, number> = {};
+  const rootMinY: Record<number, number> = {};
+  const rootMaxX: Record<number, number> = {};
+  const rootMaxY: Record<number, number> = {};
+  const rootType: Record<number, 'brown' | 'gray' | 'yellow' | 'reddish'> = {};
+
+  for (let sy = 0; sy < h; sy++) {
+    for (let sx = 0; sx < w; sx++) {
+      const si = sy * w + sx;
+      if (!sampled[si]) continue;
+      const root = find(si);
+      rootSizes[root] = (rootSizes[root] || 0) + 1;
+      if (rootMinX[root] === undefined || sx < rootMinX[root]) rootMinX[root] = sx;
+      if (rootMinY[root] === undefined || sy < rootMinY[root]) rootMinY[root] = sy;
+      if (rootMaxX[root] === undefined || sx > rootMaxX[root]) rootMaxX[root] = sx;
+      if (rootMaxY[root] === undefined || sy > rootMaxY[root]) rootMaxY[root] = sy;
+      if (!rootType[root] && sampledTypes[si]) rootType[root] = sampledTypes[si]!;
+    }
   }
 
   let count = 0;
   const sizes = { small: 0, medium: 0, large: 0 };
+  const boxes: SpotBox[] = [];
   const minSize = 5;
-  for (const sz of Object.values(rootSizes)) {
+  for (const [rootStr, sz] of Object.entries(rootSizes)) {
     if (sz >= minSize) {
       count++;
+      const root = Number(rootStr);
       if (sz < 30) sizes.small++;
       else if (sz < 100) sizes.medium++;
       else sizes.large++;
+      boxes.push({
+        x: (rootMinX[root] * step) / width,
+        y: (rootMinY[root] * step) / height,
+        w: ((rootMaxX[root] - rootMinX[root] + 1) * step) / width,
+        h: ((rootMaxY[root] - rootMinY[root] + 1) * step) / height,
+        type: rootType[root] || 'brown',
+      });
     }
   }
-  return { count, sizes };
+  return { count, sizes, boxes };
 }
 
 function calculateHealthScore(imageData: ImageData, spotCount: number): number {
@@ -965,8 +1120,9 @@ export async function analyzeRiceLeafLive(imageBlob: Blob): Promise<LiveAnalysis
     const knnResult = knnPredictFast(scaled, ref.features, ref.labels, 5);
     const ensemble = ensemblePredict(knnResult, imageData);
 
-    const { count: spotCount, sizes: spotSizes } = detectSpots(imageData);
+    const { count: spotCount, sizes: spotSizes, boxes: spots } = detectSpots(imageData);
     const healthScore = calculateHealthScore(imageData, spotCount);
+    const leafColor = analyzeLeafColor(imageData);
 
     const isDeficient = ensemble.prediction.includes('Deficiency');
     const isDiseased = ['Brown Spot', 'Rice Blast', 'Bacterial Leaf Blight', 'Rice Leaf Diseases'].includes(ensemble.prediction);
@@ -974,16 +1130,18 @@ export async function analyzeRiceLeafLive(imageBlob: Blob): Promise<LiveAnalysis
       ensemble.prediction === 'Healthy' ? 'healthy' : isDeficient ? 'deficient' : 'diseased';
 
     return {
-      prediction: ensemble.prediction,
-      confidence: ensemble.confidence,
+      prediction: leafColor.isLeaf ? ensemble.prediction : 'Unknown',
+      confidence: leafColor.isLeaf ? ensemble.confidence : 30,
       spotCount,
       spotSizes,
-      healthScore,
-      status,
+      healthScore: leafColor.isLeaf ? healthScore : 0,
+      status: leafColor.isLeaf ? status : 'healthy',
+      spots,
+      leafColor,
     };
   } catch (err) {
     console.warn('Live analysis failed:', err);
-    return { prediction: 'Healthy', confidence: 50, spotCount: 0, spotSizes: { small: 0, medium: 0, large: 0 }, healthScore: 75, status: 'healthy' };
+    return { prediction: 'Healthy', confidence: 50, spotCount: 0, spotSizes: { small: 0, medium: 0, large: 0 }, healthScore: 75, status: 'healthy', spots: [], leafColor: { dominant: 'Unknown', hue: 0, saturation: 0, brightness: 0, greenRatio: 0, isLeaf: true } };
   }
 }
 
