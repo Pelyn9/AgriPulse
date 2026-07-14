@@ -37,11 +37,22 @@ interface AppState {
   setUpdateProgress: (progress: number) => void;
 }
 
+const USER_STORAGE_KEY = 'agripulse_user';
+
+function loadPersistedUser(): UserSession | null {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
   isOfflineMode: false,
   settings: defaultSettings,
-  user: null,
+  user: loadPersistedUser(),
   showSyncPrompt: false,
   syncPromptDismissed: false,
   swUpdateAvailable: false,
@@ -66,6 +77,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ settings: next });
   },
   setUser: (user) => {
+    if (user) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
     set({ user, isOfflineMode: user ? false : true });
     if (!user) {
       const next = { ...get().settings, cloudBackup: false };

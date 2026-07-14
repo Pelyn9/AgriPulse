@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v14.0.1';
 const CACHE_NAME = `riceleaf-ai-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/riceleaf-icon.svg', '/riceleaf-maskable.svg'];
 
