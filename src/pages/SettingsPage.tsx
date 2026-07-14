@@ -1,10 +1,11 @@
-import { Bell, BookOpen, Cloud, Database, FlaskConical, Info, Languages, Leaf, LogOut, Moon, RefreshCw, Sun, Trash2, Wheat, type LucideIcon } from 'lucide-react';
+import { Bell, BookOpen, Cloud, Database, FlaskConical, Info, Languages, Leaf, LogOut, Moon, RefreshCw, Sun, Trash2, User, Wheat, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { PageHeader } from '../components/PageHeader';
 import { APP_VERSION } from '../config/version';
 import { logout } from '../services/authService';
-import { checkForUpdate, type UpdateResult } from '../services/updateService';
+import { checkForUpdate } from '../services/updateService';
 import { useAppStore } from '../store/appStore';
 import { useScanStore } from '../store/scanStore';
 import type { PredictionType, ThemePreference } from '../types';
@@ -19,6 +20,7 @@ const themes: Array<{ value: ThemePreference; label: string }> = [
 export function SettingsPage() {
   const settings = useAppStore((state) => state.settings);
   const user = useAppStore((state) => state.user);
+  const isOnline = useAppStore((state) => state.isOnline);
   const setUser = useAppStore((state) => state.setUser);
   const updateSettings = useAppStore((state) => state.updateSettings);
   const addToast = useAppStore((state) => state.addToast);
@@ -27,6 +29,7 @@ export function SettingsPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const setUpdateInfo = useAppStore((state) => state.setUpdateInfo);
   const setShowUpdateDialog = useAppStore((state) => state.setShowUpdateDialog);
+  const navigate = useNavigate();
 
   const [updateState, setUpdateState] = useState<'checking' | 'up-to-date' | 'update-available'>('checking');
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
@@ -60,6 +63,20 @@ export function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="Settings" eyebrow="Preferences" />
+
+      {user && (
+        <section className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75">
+          <div className="flex items-center gap-3">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-field-700 text-white dark:bg-field-300 dark:text-field-950">
+              <User className="h-7 w-7" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-sm font-black text-slate-950 dark:text-white">{user.name}</h2>
+              <p className="mt-0.5 truncate text-xs font-semibold text-slate-500 dark:text-slate-400">{user.email}</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75">
         <div className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950 dark:text-white">
@@ -160,8 +177,28 @@ export function SettingsPage() {
           icon={Cloud}
           title="Cloud Backup"
           checked={settings.cloudBackup}
-          onChange={(value) => updateSettings({ cloudBackup: value })}
+          onChange={(value) => {
+            if (value && !isOnline) {
+              addToast({ title: 'No internet connected', description: 'Cloud backup requires an internet connection.', tone: 'warning' });
+              return;
+            }
+            if (value && !user) {
+              navigate('/login?from=settings');
+              return;
+            }
+            updateSettings({ cloudBackup: value });
+          }}
         />
+        {settings.cloudBackup && user && (
+          <p className="pl-14 text-xs font-semibold text-field-700 dark:text-field-300">
+            Syncing as {user.email}
+          </p>
+        )}
+        {!user && (
+          <p className="pl-14 text-xs font-semibold text-slate-400 dark:text-slate-500">
+            Login to enable cloud sync
+          </p>
+        )}
       </section>
 
       <section className="space-y-3 rounded-2xl border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75">
@@ -198,18 +235,20 @@ export function SettingsPage() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={async () => {
-            await logout();
-            setUser(null);
-            addToast({ title: user ? 'Logged out' : 'Offline profile active', tone: user ? 'success' : 'info' });
-          }}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 dark:border-white/10 dark:text-slate-200"
-        >
-          {settings.theme === 'dark' ? <Moon className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
-          Logout
-        </button>
+        {user && user.provider === 'email' && (
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              setUser(null);
+              addToast({ title: 'Logged out', description: 'Switched to offline mode.', tone: 'info' });
+            }}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 dark:border-white/10 dark:text-slate-200"
+          >
+            {settings.theme === 'dark' ? <Moon className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
+            Logout
+          </button>
+        )}
       </section>
 
       <ConfirmationDialog

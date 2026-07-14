@@ -5,6 +5,7 @@ import { createId } from '../utils/id';
 interface Credentials {
   email: string;
   password: string;
+  name?: string;
 }
 
 function createMockUser(email: string): UserSession {
@@ -38,13 +39,17 @@ export async function loginWithEmail({ email, password }: Credentials): Promise<
   };
 }
 
-export async function registerWithEmail({ email, password }: Credentials): Promise<UserSession> {
+export async function registerWithEmail({ email, password, name }: Credentials): Promise<UserSession> {
   if (!supabase) {
     await new Promise((resolve) => window.setTimeout(resolve, 900));
     return createMockUser(email);
   }
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name: name || email.split('@')[0] } },
+  });
 
   if (error) {
     throw error;
@@ -52,21 +57,38 @@ export async function registerWithEmail({ email, password }: Credentials): Promi
 
   return {
     id: data.user?.id ?? createId('user'),
-    name: email.split('@')[0] ?? 'Rice Grower',
+    name: data.user?.user_metadata.name ?? name ?? email.split('@')[0] ?? 'Rice Grower',
     email,
     provider: 'email',
   };
 }
 
-export async function loginWithGooglePlaceholder(): Promise<UserSession> {
-  await new Promise((resolve) => window.setTimeout(resolve, 650));
+export async function resetPassword(email: string): Promise<void> {
+  if (!supabase) {
+    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    return;
+  }
 
-  return {
-    id: createId('google'),
-    name: 'Google User',
-    email: 'google.user@example.com',
-    provider: 'google',
-  };
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updatePassword(newPassword: string): Promise<void> {
+  if (!supabase) {
+    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function logout() {

@@ -50,7 +50,7 @@ export interface UserSession {
   id: string;
   name: string;
   email: string;
-  provider: 'email' | 'google' | 'mock';
+  provider: 'email' | 'mock';
 }
 
 export interface SyncProgress {

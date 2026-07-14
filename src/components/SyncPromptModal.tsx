@@ -35,7 +35,7 @@ export function SyncPromptModal() {
                 type="button"
                 onClick={() => {
                   setSyncPrompt(false);
-                  navigate('/login');
+                  navigate('/login?from=sync');
                 }}
                 className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-field-700 px-4 text-sm font-bold text-white dark:bg-field-300 dark:text-field-950"
               >
@@ -44,11 +44,14 @@ export function SyncPromptModal() {
               </button>
               <button
                 type="button"
-                onClick={() => setSyncPrompt(false)}
+                onClick={() => {
+                  setSyncPrompt(false);
+                  navigate('/home');
+                }}
                 className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-bold text-slate-700 dark:border-white/10 dark:text-slate-200"
               >
                 <Leaf className="h-4 w-4" />
-                Continue Offline
+                Continue to Dashboard
               </button>
             </div>
           </motion.div>

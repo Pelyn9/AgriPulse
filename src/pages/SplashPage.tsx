@@ -3,17 +3,19 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConnectionStatusBadge } from '../components/ConnectionStatusBadge';
 import { LeafLogo } from '../components/LeafLogo';
+import { useAppStore } from '../store/appStore';
 
 export function SplashPage() {
   const navigate = useNavigate();
+  const user = useAppStore((state) => state.user);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      navigate('/home', { replace: true });
+      navigate(user ? '/home' : '/login', { replace: true });
     }, 1900);
 
     return () => window.clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
     <main className="safe-top flex min-h-screen flex-col items-center justify-center px-8 pb-12 text-center md:min-h-0 md:h-full">

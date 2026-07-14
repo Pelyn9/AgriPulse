@@ -11,6 +11,7 @@ interface UpdateInfo {
 
 interface AppState {
   isOnline: boolean;
+  isOfflineMode: boolean;
   settings: AppSettings;
   user: UserSession | null;
   showSyncPrompt: boolean;
@@ -21,6 +22,7 @@ interface AppState {
   updateProgress: number;
   initializeSettings: () => Promise<void>;
   setOnline: (isOnline: boolean) => void;
+  setOfflineMode: (offline: boolean) => void;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
   setUser: (user: UserSession | null) => void;
   setSyncPrompt: (show: boolean) => void;
@@ -34,6 +36,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
+  isOfflineMode: false,
   settings: defaultSettings,
   user: null,
   showSyncPrompt: false,
@@ -51,12 +54,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ settings });
   },
   setOnline: (isOnline) => set({ isOnline }),
+  setOfflineMode: (isOfflineMode) => set({ isOfflineMode }),
   updateSettings: async (settingsPatch) => {
     const next = { ...get().settings, ...settingsPatch };
     await saveSettings(next);
     set({ settings: next });
   },
-  setUser: (user) => set({ user }),
+  setUser: (user) => set({ user, isOfflineMode: user ? false : true }),
   setSyncPrompt: (showSyncPrompt) => set({ showSyncPrompt }),
   setSyncProgress: (syncProgress) => set({ syncProgress }),
   addToast: (toast) => {

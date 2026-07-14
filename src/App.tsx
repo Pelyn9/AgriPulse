@@ -12,6 +12,7 @@ export default function App() {
   const initializeSettings = useAppStore((state) => state.initializeSettings);
   const isOnline = useAppStore((state) => state.isOnline);
   const user = useAppStore((state) => state.user);
+  const cloudBackup = useAppStore((state) => state.settings.cloudBackup);
   const syncProgress = useAppStore((state) => state.syncProgress.status);
   const loadScans = useScanStore((state) => state.loadScans);
   const sync = useSync();
@@ -26,10 +27,10 @@ export default function App() {
   }, [initializeSettings, loadScans]);
 
   useEffect(() => {
-    if (isOnline && user && syncProgress === 'idle') {
+    if (isOnline && user && cloudBackup && syncProgress === 'idle') {
       sync();
     }
-  }, [isOnline, sync, syncProgress, user]);
+  }, [isOnline, cloudBackup, sync, syncProgress, user]);
 
   return (
     <PhoneShell>
