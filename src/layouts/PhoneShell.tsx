@@ -4,6 +4,7 @@ import { SyncProgressDialog } from '../components/SyncProgressDialog';
 import { SyncPromptModal } from '../components/SyncPromptModal';
 import { ToastViewport } from '../components/ToastViewport';
 import { UpdateDialog } from '../components/UpdateDialog';
+import { WhatsNewDialog } from '../components/WhatsNewDialog';
 import { useAppStore } from '../store/appStore';
 
 interface PhoneShellProps {
@@ -12,6 +13,9 @@ interface PhoneShellProps {
 
 export function PhoneShell({ children }: PhoneShellProps) {
   const swUpdateAvailable = useAppStore((state) => state.swUpdateAvailable);
+  const showWhatsNew = useAppStore((state) => state.showWhatsNew);
+  const whatsNewReviewMode = useAppStore((state) => state.whatsNewReviewMode);
+  const setShowWhatsNew = useAppStore((state) => state.setShowWhatsNew);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#bbf7d0,transparent_34%),linear-gradient(135deg,#eef8f0,#d3e7d9_46%,#b8d6c2)] p-0 text-slate-950 dark:bg-[radial-gradient(circle_at_top_left,#14532d,transparent_34%),linear-gradient(135deg,#06140d,#0b2417_52%,#102018)] md:grid md:place-items-center md:p-6">
@@ -32,6 +36,7 @@ export function PhoneShell({ children }: PhoneShellProps) {
         <SyncPromptModal />
         <SyncProgressDialog />
         <UpdateDialog />
+        <WhatsNewDialog open={showWhatsNew} onDismiss={() => setShowWhatsNew(false)} reviewMode={whatsNewReviewMode} />
         <ToastViewport />
       </div>
     </div>

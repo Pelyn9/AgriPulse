@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { PageHeader } from '../components/PageHeader';
-import { WhatsNewDialog } from '../components/WhatsNewDialog';
 import { APP_VERSION } from '../config/version';
 import { logout } from '../services/authService';
 import { checkForUpdate } from '../services/updateService';
@@ -28,7 +27,7 @@ export function SettingsPage() {
   const scans = useScanStore((state) => state.scans);
   const clearAll = useScanStore((state) => state.clearAll);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const setShowWhatsNew = useAppStore((state) => state.setShowWhatsNew);
   const setUpdateInfo = useAppStore((state) => state.setUpdateInfo);
   const setShowUpdateDialog = useAppStore((state) => state.setShowUpdateDialog);
   const navigate = useNavigate();
@@ -145,7 +144,7 @@ export function SettingsPage() {
         )}
         <button
           type="button"
-          onClick={() => setShowWhatsNew(true)}
+          onClick={() => setShowWhatsNew(true, true)}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 py-3 text-sm font-black text-slate-700 dark:border-white/10 dark:text-slate-200"
         >
           <Sparkles className="h-4 w-4" />
@@ -275,7 +274,6 @@ export function SettingsPage() {
           addToast({ title: 'Local data cleared', tone: 'warning' });
         }}
       />
-      <WhatsNewDialog open={showWhatsNew} onDismiss={() => setShowWhatsNew(false)} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { PhoneShell } from './layouts/PhoneShell';
 import { AppRoutes } from './routes/AppRoutes';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
@@ -7,7 +7,6 @@ import { useTheme } from './hooks/useTheme';
 import { useUpdateChecker } from './hooks/useUpdateChecker';
 import { useAppStore } from './store/appStore';
 import { useScanStore } from './store/scanStore';
-import { WhatsNewDialog } from './components/WhatsNewDialog';
 import { APP_VERSION } from './config/version';
 
 const SEEN_VERSION_KEY = 'agripulse_seen_version';
@@ -18,9 +17,9 @@ export default function App() {
   const user = useAppStore((state) => state.user);
   const cloudBackup = useAppStore((state) => state.settings.cloudBackup);
   const syncProgress = useAppStore((state) => state.syncProgress.status);
+  const setShowWhatsNew = useAppStore((state) => state.setShowWhatsNew);
   const loadScans = useScanStore((state) => state.loadScans);
   const sync = useSync();
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
 
   useConnectionStatus();
   useTheme();
@@ -34,10 +33,10 @@ export default function App() {
   useEffect(() => {
     const seen = localStorage.getItem(SEEN_VERSION_KEY);
     if (seen !== APP_VERSION) {
-      setShowWhatsNew(true);
+      setShowWhatsNew(true, false);
       localStorage.setItem(SEEN_VERSION_KEY, APP_VERSION);
     }
-  }, []);
+  }, [setShowWhatsNew]);
 
   useEffect(() => {
     if (isOnline && user && cloudBackup && syncProgress === 'idle') {
@@ -48,7 +47,6 @@ export default function App() {
   return (
     <PhoneShell>
       <AppRoutes />
-      <WhatsNewDialog open={showWhatsNew} onDismiss={() => setShowWhatsNew(false)} />
     </PhoneShell>
   );
 }

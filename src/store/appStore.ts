@@ -22,6 +22,8 @@ interface AppState {
   updateInfo: UpdateInfo | null;
   showUpdateDialog: boolean;
   updateProgress: number;
+  showWhatsNew: boolean;
+  whatsNewReviewMode: boolean;
   initializeSettings: () => Promise<void>;
   setOnline: (isOnline: boolean) => void;
   setOfflineMode: (offline: boolean) => void;
@@ -35,6 +37,7 @@ interface AppState {
   setUpdateInfo: (info: UpdateInfo | null) => void;
   setShowUpdateDialog: (show: boolean) => void;
   setUpdateProgress: (progress: number) => void;
+  setShowWhatsNew: (show: boolean, reviewMode?: boolean) => void;
 }
 
 const USER_STORAGE_KEY = 'agripulse_user';
@@ -65,6 +68,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateInfo: null,
   showUpdateDialog: false,
   updateProgress: -1,
+  showWhatsNew: false,
+  whatsNewReviewMode: false,
   initializeSettings: async () => {
     const settings = await getSettings();
     set({ settings });
@@ -107,4 +112,5 @@ export const useAppStore = create<AppState>((set, get) => ({
   setUpdateInfo: (updateInfo) => set({ updateInfo }),
   setShowUpdateDialog: (showUpdateDialog) => set({ showUpdateDialog }),
   setUpdateProgress: (updateProgress) => set({ updateProgress }),
+  setShowWhatsNew: (show, reviewMode = false) => set({ showWhatsNew: show, whatsNewReviewMode: reviewMode }),
 }));

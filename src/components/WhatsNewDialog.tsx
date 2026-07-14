@@ -18,11 +18,79 @@ const sectionColors: Record<string, string> = {
 interface Props {
   open: boolean;
   onDismiss: () => void;
+  reviewMode?: boolean;
 }
 
-export function WhatsNewDialog({ open, onDismiss }: Props) {
+export function WhatsNewDialog({ open, onDismiss, reviewMode = false }: Props) {
   const entry = changelog[0];
   const [page, setPage] = useState(0);
+
+  if (reviewMode) {
+    return (
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[60] grid place-items-center bg-slate-950/45 p-6 pb-28 backdrop-blur-sm"
+            onClick={onDismiss}
+          >
+            <motion.div
+              initial={{ y: 18, scale: 0.96 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 18, scale: 0.96 }}
+              className="scrollbar-hide max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-3xl border border-white/60 bg-white/95 p-5 shadow-glass dark:border-white/10 dark:bg-slate-950/95"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-field-100 text-field-700 dark:bg-field-500/15 dark:text-field-200">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-950 dark:text-white">What's New</h2>
+                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500">
+                    v{entry.version} — {entry.date}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {entry.sections.map((section) => {
+                  const Icon = sectionIcons[section.title] ?? Sparkles;
+                  return (
+                    <div key={section.title}>
+                      <span className={`mb-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${sectionColors[section.title] ?? sectionColors.Added}`}>
+                        <Icon className="h-3 w-3" />
+                        {section.title}
+                      </span>
+                      <ul className="space-y-2 pl-1">
+                        {section.items.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-field-500" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={onDismiss}
+                className="mt-5 flex min-h-11 w-full items-center justify-center rounded-2xl bg-field-700 px-4 text-sm font-bold text-white dark:bg-field-300 dark:text-field-950"
+              >
+                Got it!
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
   const section = entry.sections[page];
   const Icon = sectionIcons[section?.title] ?? Sparkles;
   const isLast = page === entry.sections.length - 1;
@@ -34,7 +102,7 @@ export function WhatsNewDialog({ open, onDismiss }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 z-50 grid place-items-center bg-slate-950/45 p-6 backdrop-blur-sm"
+          className="absolute inset-0 z-[60] grid place-items-center bg-slate-950/45 p-6 pb-28 backdrop-blur-sm"
         >
           <motion.div
             initial={{ y: 18, scale: 0.96 }}
