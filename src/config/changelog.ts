@@ -9,6 +9,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '15.0.2',
+    date: 'July 14, 2026',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'In-app update now auto-restarts the app after install',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Update dialog progress now shows "Installing..." at 100% instead of staying stuck on "Downloading..."',
+          'Update dialog backdrop now properly blurs over the navbar',
+        ],
+      },
+    ],
+  },
+  {
     version: '15.0.1',
     date: 'July 14, 2026',
     sections: [

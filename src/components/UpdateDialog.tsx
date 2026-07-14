@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, RefreshCw, X, CheckCircle } from 'lucide-react';
+import { App } from '@capacitor/app';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { useAppStore } from '../store/appStore';
 
@@ -21,7 +22,19 @@ export function UpdateDialog() {
   const setUpdateInfo = useAppStore((state) => state.setUpdateInfo);
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<'idle' | 'downloading' | 'done' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'downloading' | 'installing' | 'done' | 'error'>('idle');
+
+  useEffect(() => {
+    if (status !== 'installing') return;
+
+    const listener = App.addListener('appStateChange', (state) => {
+      if (state.isActive) {
+        window.setTimeout(() => window.location.reload(), 500);
+      }
+    });
+
+    return () => { listener.then((l) => l.remove()); };
+  }, [status]);
 
   const dismiss = () => {
     setShowUpdateDialog(false);
@@ -42,6 +55,10 @@ export function UpdateDialog() {
     try {
       const listener = ApkInstaller.addListener('downloadProgress', (data) => {
         if (data.progress !== undefined) setProgress(data.progress);
+        if (data.status === 'done') {
+          setProgress(100);
+          setStatus('installing');
+        }
         if (data.status === 'installed') setStatus('done');
       });
 
@@ -64,7 +81,7 @@ export function UpdateDialog() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 z-60 grid place-items-center bg-slate-950/45 p-6 backdrop-blur-sm"
+          className="absolute inset-0 z-[60] grid place-items-center bg-slate-950/45 p-6 backdrop-blur-sm"
         >
           <motion.div
             initial={{ y: 18, scale: 0.96 }}
@@ -73,7 +90,7 @@ export function UpdateDialog() {
             className="w-full max-w-sm rounded-3xl border border-white/60 bg-white/95 p-5 shadow-glass dark:border-white/10 dark:bg-slate-950/95"
           >
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-200">
-              <RefreshCw className="h-6 w-6" />
+              <RefreshCw className={cn('h-6 w-6', status === 'installing' && 'animate-spin')} />
             </div>
             <h2 className="text-xl font-black text-slate-950 dark:text-white">Update Available</h2>
             <p className="mt-1 text-sm font-bold text-green-600 dark:text-green-400">
@@ -90,7 +107,8 @@ export function UpdateDialog() {
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
                   <span>
                     {status === 'downloading' && 'Downloading...'}
-                    {status === 'done' && 'Update ready to install!'}
+                    {status === 'installing' && 'Installing... Restarting shortly...'}
+                    {status === 'done' && 'Update installed!'}
                     {status === 'error' && 'Download failed'}
                   </span>
                   <span>{progress}%</span>
@@ -132,19 +150,25 @@ export function UpdateDialog() {
                   {downloading ? 'Downloading...' : 'Update Now'}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={dismiss}
-                disabled={downloading}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-bold text-slate-700 dark:border-white/10 dark:text-slate-200 disabled:opacity-50"
-              >
-                <X className="h-4 w-4" />
-                Later
-              </button>
+              {status !== 'installing' && (
+                <button
+                  type="button"
+                  onClick={dismiss}
+                  disabled={downloading}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-bold text-slate-700 dark:border-white/10 dark:text-slate-200 disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                  Later
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
+}
+
+function cn(...classes: (string | false | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
 }
