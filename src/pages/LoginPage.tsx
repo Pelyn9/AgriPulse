@@ -35,7 +35,7 @@ export function LoginPage() {
   } = useForm<LoginForm>({
     defaultValues: {
       name: '',
-      email: '',
+      email: localStorage.getItem('lastLoginEmail') || '',
       password: '',
     },
   });
@@ -46,6 +46,7 @@ export function LoginPage() {
       const user = await userPromise;
       setUser(user);
       setSyncPrompt(false);
+      localStorage.setItem('lastLoginEmail', user.email);
       await updateSettings({ cloudBackup: true });
       addToast({ title: `Welcome, ${user.name}`, description: 'Local scans are ready for sync.', tone: 'success' });
       await sync(user);

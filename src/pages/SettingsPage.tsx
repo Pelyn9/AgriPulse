@@ -243,6 +243,7 @@ export function SettingsPage() {
               await updateSettings({ cloudBackup: false });
               setUser(null);
               addToast({ title: 'Logged out', description: 'Switched to offline mode.', tone: 'info' });
+              navigate('/login', { replace: true });
             }}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 dark:border-white/10 dark:text-slate-200"
           >
