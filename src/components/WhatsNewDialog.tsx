@@ -33,14 +33,14 @@ export function WhatsNewDialog({ open, onDismiss, reviewMode = false }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[60] grid place-items-center bg-slate-950/45 p-6 pb-28 backdrop-blur-sm"
+            className="absolute inset-0 z-[60] flex items-end justify-center bg-slate-950/45 p-6 pb-24 backdrop-blur-sm"
             onClick={onDismiss}
           >
             <motion.div
               initial={{ y: 18, scale: 0.96 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: 18, scale: 0.96 }}
-              className="scrollbar-hide max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-3xl border border-white/60 bg-white/95 p-5 shadow-glass dark:border-white/10 dark:bg-slate-950/95"
+              className="scrollbar-hide max-h-[60vh] w-full max-w-sm overflow-y-auto rounded-3xl border border-white/60 bg-white/95 p-5 shadow-glass dark:border-white/10 dark:bg-slate-950/95"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center gap-2">
@@ -102,7 +102,7 @@ export function WhatsNewDialog({ open, onDismiss, reviewMode = false }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 z-[60] grid place-items-center bg-slate-950/45 p-6 pb-28 backdrop-blur-sm"
+          className="absolute inset-0 z-[60] flex items-end justify-center bg-slate-950/45 p-6 pb-24 backdrop-blur-sm"
         >
           <motion.div
             initial={{ y: 18, scale: 0.96 }}

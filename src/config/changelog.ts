@@ -9,6 +9,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '15.0.1',
+    date: 'July 14, 2026',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'What\'s New changelog dialog — shows once on update, re-readable from Settings',
+        ],
+      },
+      {
+        title: 'Improved',
+        items: [
+          'Reports pie chart now shows all 8 disease categories',
+          'Monthly Scans bar chart hides when there is no data',
+          'What\'s New dialog positioned lower for easy thumb reach',
+          'Backdrop blur now covers full screen properly',
+        ],
+      },
+    ],
+  },
+  {
     version: '15.0.0',
     date: 'July 14, 2026',
     sections: [
