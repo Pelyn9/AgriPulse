@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, Mail, Sprout, User, WifiOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, KeyRound, Mail, Sprout, User, WifiOff } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -18,6 +18,7 @@ interface LoginForm {
 export function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const from = searchParams.get('from') === 'settings' ? '/settings' : '/home';
@@ -25,6 +26,7 @@ export function LoginPage() {
   const setUser = useAppStore((state) => state.setUser);
   const setSyncPrompt = useAppStore((state) => state.setSyncPrompt);
   const addToast = useAppStore((state) => state.addToast);
+  const updateSettings = useAppStore((state) => state.updateSettings);
   const sync = useSync();
   const {
     register,
@@ -44,6 +46,7 @@ export function LoginPage() {
       const user = await userPromise;
       setUser(user);
       setSyncPrompt(false);
+      await updateSettings({ cloudBackup: true });
       addToast({ title: `Welcome, ${user.name}`, description: 'Local scans are ready for sync.', tone: 'success' });
       await sync(user);
       navigate(from, { replace: true });
@@ -87,7 +90,7 @@ export function LoginPage() {
     }
   };
 
-  const handleOffline = () => {
+  const handleOffline = async () => {
     const offlineUser: UserSession = {
       id: createId('offline'),
       name: 'Offline User',
@@ -95,6 +98,7 @@ export function LoginPage() {
       provider: 'mock',
     };
     setUser(offlineUser);
+    await updateSettings({ cloudBackup: false });
     addToast({ title: 'Offline mode', description: 'You can scan and view history locally.', tone: 'info' });
     navigate('/home', { replace: true });
   };
@@ -187,10 +191,13 @@ export function LoginPage() {
           <span className="flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 dark:border-white/10 dark:bg-white/10">
             <KeyRound className="h-4 w-4 text-slate-400" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               className="min-h-12 min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none dark:text-white"
               {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Use at least 6 characters' } })}
             />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </span>
           {errors.password && <span className="mt-1 block text-xs font-bold text-rose-600">{errors.password.message}</span>}
         </label>

@@ -8,6 +8,8 @@ export function SyncPromptModal() {
   const open = useAppStore((state) => state.showSyncPrompt);
   const setSyncPrompt = useAppStore((state) => state.setSyncPrompt);
 
+  const dismiss = () => setSyncPrompt(false);
+
   return (
     <AnimatePresence>
       {open && (
@@ -16,12 +18,14 @@ export function SyncPromptModal() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="absolute inset-0 z-40 grid place-items-center bg-slate-950/45 p-6 backdrop-blur-sm"
+          onClick={dismiss}
         >
           <motion.div
             initial={{ y: 18, scale: 0.96 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 18, scale: 0.96 }}
             className="w-full max-w-sm rounded-3xl border border-white/60 bg-white/95 p-5 shadow-glass dark:border-white/10 dark:bg-slate-950/95"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-field-100 text-field-700 dark:bg-field-500/15 dark:text-field-200">
               <CloudUpload className="h-6 w-6" />
@@ -34,7 +38,7 @@ export function SyncPromptModal() {
               <button
                 type="button"
                 onClick={() => {
-                  setSyncPrompt(false);
+                  dismiss();
                   navigate('/login?from=sync');
                 }}
                 className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-field-700 px-4 text-sm font-bold text-white dark:bg-field-300 dark:text-field-950"
@@ -45,7 +49,7 @@ export function SyncPromptModal() {
               <button
                 type="button"
                 onClick={() => {
-                  setSyncPrompt(false);
+                  dismiss();
                   navigate('/home');
                 }}
                 className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-bold text-slate-700 dark:border-white/10 dark:text-slate-200"

@@ -15,6 +15,8 @@ interface AppState {
   settings: AppSettings;
   user: UserSession | null;
   showSyncPrompt: boolean;
+  syncPromptDismissed: boolean;
+  swUpdateAvailable: boolean;
   syncProgress: SyncProgress;
   toasts: ToastMessage[];
   updateInfo: UpdateInfo | null;
@@ -26,6 +28,7 @@ interface AppState {
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
   setUser: (user: UserSession | null) => void;
   setSyncPrompt: (show: boolean) => void;
+  setSwUpdateAvailable: (available: boolean) => void;
   setSyncProgress: (progress: SyncProgress) => void;
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
@@ -40,6 +43,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: defaultSettings,
   user: null,
   showSyncPrompt: false,
+  syncPromptDismissed: false,
+  swUpdateAvailable: false,
   syncProgress: {
     status: 'idle',
     uploaded: 0,
@@ -60,8 +65,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     await saveSettings(next);
     set({ settings: next });
   },
-  setUser: (user) => set({ user, isOfflineMode: user ? false : true }),
-  setSyncPrompt: (showSyncPrompt) => set({ showSyncPrompt }),
+  setUser: (user) => {
+    set({ user, isOfflineMode: user ? false : true });
+    if (!user) {
+      const next = { ...get().settings, cloudBackup: false };
+      saveSettings(next);
+      set({ settings: next });
+    }
+  },
+  setSyncPrompt: (showSyncPrompt) => set({ showSyncPrompt, syncPromptDismissed: showSyncPrompt ? false : true }),
+  setSwUpdateAvailable: (swUpdateAvailable) => set({ swUpdateAvailable }),
   setSyncProgress: (syncProgress) => set({ syncProgress }),
   addToast: (toast) => {
     const id = createId('toast');

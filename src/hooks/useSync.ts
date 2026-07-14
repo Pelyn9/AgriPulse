@@ -21,7 +21,6 @@ export function useSync() {
     const pending = await getPendingScans();
 
     if (pending.length === 0) {
-      setSyncProgress({ status: 'complete', uploaded: 0, total: 0, message: 'All scans are already synced.' });
       return true;
     }
 

@@ -1,4 +1,5 @@
-const CACHE_NAME = 'riceleaf-ai-v1';
+const CACHE_VERSION = 'v14';
+const CACHE_NAME = `riceleaf-ai-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/riceleaf-icon.svg', '/riceleaf-maskable.svg'];
 
 self.addEventListener('install', (event) => {
@@ -21,19 +22,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+
+  if (url.pathname === '/sw.js') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-
-      return fetch(event.request)
+      const fetchPromise = fetch(event.request)
         .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
           return response;
         })
-        .catch(() => caches.match('/index.html'));
+        .catch(() => cached || caches.match('/index.html'));
+
+      return cached || fetchPromise;
     }),
   );
 });

@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, Sprout } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, KeyRound, Sprout } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +14,8 @@ interface ResetForm {
 export function ResetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const addToast = useAppStore((state) => state.addToast);
   const {
@@ -80,10 +82,13 @@ export function ResetPasswordPage() {
             <span className="flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 dark:border-white/10 dark:bg-white/10">
               <KeyRound className="h-4 w-4 text-slate-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 className="min-h-12 min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none dark:text-white"
                 {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Use at least 6 characters' } })}
               />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </span>
             {errors.password && <span className="mt-1 block text-xs font-bold text-rose-600">{errors.password.message}</span>}
           </label>
@@ -93,13 +98,16 @@ export function ResetPasswordPage() {
             <span className="flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 dark:border-white/10 dark:bg-white/10">
               <KeyRound className="h-4 w-4 text-slate-400" />
               <input
-                type="password"
+                type={showConfirm ? 'text' : 'password'}
                 className="min-h-12 min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none dark:text-white"
                 {...register('confirmPassword', {
                   required: 'Please confirm your password',
                   validate: (val, formValues) => val === formValues.password || 'Passwords do not match',
                 })}
               />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </span>
             {errors.confirmPassword && <span className="mt-1 block text-xs font-bold text-rose-600">{errors.confirmPassword.message}</span>}
           </label>

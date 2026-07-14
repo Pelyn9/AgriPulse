@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles.css';
 import { registerServiceWorker } from './utils/registerServiceWorker';
+import { useAppStore } from './store/appStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,4 +26,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
-registerServiceWorker();
+registerServiceWorker(() => {
+  useAppStore.getState().setSwUpdateAvailable(true);
+});

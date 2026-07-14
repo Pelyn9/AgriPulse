@@ -240,6 +240,7 @@ export function SettingsPage() {
             type="button"
             onClick={async () => {
               await logout();
+              await updateSettings({ cloudBackup: false });
               setUser(null);
               addToast({ title: 'Logged out', description: 'Switched to offline mode.', tone: 'info' });
             }}

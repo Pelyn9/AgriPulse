@@ -6,14 +6,16 @@ import { useAppStore } from '../store/appStore';
 export function useConnectionStatus() {
   const setOnline = useAppStore((state) => state.setOnline);
   const setSyncPrompt = useAppStore((state) => state.setSyncPrompt);
+  const dismissed = useAppStore((state) => state.syncPromptDismissed);
 
   useEffect(() => {
     let cancelled = false;
 
     const handleOnline = async () => {
+      if (cancelled || dismissed) return;
       setOnline(true);
       const pending = await getPendingScans();
-      if (pending.length > 0) {
+      if (!cancelled && pending.length > 0) {
         setSyncPrompt(true);
       }
     };
@@ -45,5 +47,5 @@ export function useConnectionStatus() {
       cancelled = true;
       Network.removeAllListeners();
     };
-  }, [setOnline, setSyncPrompt]);
+  }, [setOnline, setSyncPrompt, dismissed]);
 }
