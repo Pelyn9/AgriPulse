@@ -122,6 +122,7 @@ export function ReportsPage() {
         </div>
       </AnimatedCard>
 
+      {scans.length > 0 && (
       <AnimatedCard>
         <div className="mb-5 flex items-center justify-between">
           <div>
@@ -144,6 +145,7 @@ export function ReportsPage() {
           ))}
         </div>
       </AnimatedCard>
+      )}
     </div>
   );
 }
