@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, EyeOff, KeyRound, Mail, Sprout, User, WifiOff } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Mail, Sprout, User, WifiOff } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -106,13 +106,6 @@ export function LoginPage() {
 
   return (
     <main className="safe-top h-full min-h-screen overflow-y-auto px-5 pb-8 pt-6 md:min-h-0">
-      <Link
-        to={from}
-        className="mb-8 inline-grid h-11 w-11 place-items-center rounded-2xl border border-white/70 bg-white/80 text-slate-700 shadow-soft dark:border-white/10 dark:bg-white/10 dark:text-white"
-        aria-label="Back"
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </Link>
 
       <div className="mb-8 flex flex-col items-center text-center">
         <LeafLogo size="md" />
