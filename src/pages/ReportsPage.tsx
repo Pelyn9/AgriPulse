@@ -8,13 +8,37 @@ import { useScanStore } from '../store/scanStore';
 import { scansToCsv, downloadTextFile } from '../utils/csv';
 import { formatMonthKey } from '../utils/date';
 
+const CATEGORIES = [
+  { label: 'Healthy', color: '#16a34a' },
+  { label: 'Nitrogen Deficiency', color: '#3b82f6' },
+  { label: 'Phosphorus Deficiency', color: '#a855f7' },
+  { label: 'Potassium Deficiency', color: '#f59e0b' },
+  { label: 'Brown Spot', color: '#f97316' },
+  { label: 'Rice Blast', color: '#f43f5e' },
+  { label: 'Bacterial Leaf Blight', color: '#ef4444' },
+  { label: 'Rice Leaf Diseases', color: '#ec4899' },
+];
+
 export function ReportsPage() {
   const scans = useScanStore((state) => state.scans);
   const addToast = useAppStore((state) => state.addToast);
   const healthy = scans.filter((scan) => scan.prediction === 'Healthy').length;
-  const deficient = scans.length - healthy;
-  const healthyPercent = scans.length ? Math.round((healthy / scans.length) * 100) : 0;
   const pending = scans.filter((scan) => !scan.synced).length;
+
+  const categoryCounts = CATEGORIES.map((cat) => ({
+    ...cat,
+    count: scans.filter((s) => s.prediction === cat.label).length,
+  })).filter((c) => c.count > 0);
+
+  const total = scans.length || 1;
+  let accumulated = 0;
+  const conicStops = categoryCounts.length
+    ? categoryCounts.map((c) => {
+        const start = accumulated;
+        accumulated += (c.count / total) * 100;
+        return `${c.color} ${start}% ${accumulated}%`;
+      }).join(', ')
+    : '#d1d5db 0 100%';
 
   const monthly = scans.reduce<Record<string, number>>((acc, scan) => {
     const key = formatMonthKey(scan.createdAt);
@@ -63,7 +87,7 @@ export function ReportsPage() {
       <AnimatedCard>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-black text-slate-950 dark:text-white">Healthy vs Deficient</h2>
+            <h2 className="text-base font-black text-slate-950 dark:text-white">By Category</h2>
             <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Pie Chart</p>
           </div>
           <PieChart className="h-5 w-5 text-field-700 dark:text-field-300" />
@@ -71,31 +95,29 @@ export function ReportsPage() {
         <div className="flex items-center gap-5">
           <div
             className="h-32 w-32 shrink-0 rounded-full shadow-inner"
-            style={{
-              background: scans.length
-                ? `conic-gradient(#16a34a 0 ${healthyPercent}%, #f59e0b ${healthyPercent}% 100%)`
-                : 'conic-gradient(#d1d5db 0 100%)',
-            }}
+            style={{ background: `conic-gradient(${conicStops})` }}
           />
-          <div className="min-w-0 flex-1 space-y-3">
-            <div>
-              <div className="flex justify-between text-xs font-black text-slate-700 dark:text-slate-200">
-                <span>Healthy</span>
-                <span>{healthy}</span>
+          <div className="min-w-0 flex-1 space-y-2">
+            {categoryCounts.map((cat) => (
+              <div key={cat.label}>
+                <div className="flex justify-between text-xs font-black text-slate-700 dark:text-slate-200">
+                  <span>{cat.label}</span>
+                  <span>{cat.count}</span>
+                </div>
+                <div className="mt-1 h-2 rounded-full bg-slate-100 dark:bg-white/10">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(cat.count / total) * 100}%`,
+                      backgroundColor: cat.color,
+                    }}
+                  />
+                </div>
               </div>
-              <div className="mt-1 h-2 rounded-full bg-field-100 dark:bg-field-950">
-                <div className="h-full rounded-full bg-field-600" style={{ width: `${healthyPercent}%` }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs font-black text-slate-700 dark:text-slate-200">
-                <span>Deficient</span>
-                <span>{deficient}</span>
-              </div>
-              <div className="mt-1 h-2 rounded-full bg-harvest-100 dark:bg-harvest-500/15">
-                <div className="h-full rounded-full bg-harvest-500" style={{ width: `${100 - healthyPercent}%` }} />
-              </div>
-            </div>
+            ))}
+            {!categoryCounts.length && (
+              <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">No scans yet</p>
+            )}
           </div>
         </div>
       </AnimatedCard>

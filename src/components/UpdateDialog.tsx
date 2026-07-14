@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, RefreshCw, X, CheckCircle } from 'lucide-react';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { useAppStore } from '../store/appStore';
 
-declare global {
-  interface Window {
-    ApkInstaller?: {
-      downloadAndInstall: (opts: { url: string; fileName: string }) => Promise<void>;
-      addListener: (
-        event: string,
-        cb: (data: { progress?: number; status?: string }) => void,
-      ) => { remove: () => void };
-    };
-  }
+interface ApkInstallerPlugin {
+  downloadAndInstall(opts: { url: string; fileName: string }): Promise<void>;
+  addListener(
+    event: string,
+    cb: (data: { progress?: number; status?: string }) => void,
+  ): { remove: () => void };
 }
+
+const ApkInstaller = registerPlugin<ApkInstallerPlugin>('ApkInstaller');
 
 export function UpdateDialog() {
   const open = useAppStore((state) => state.showUpdateDialog);
@@ -33,19 +32,20 @@ export function UpdateDialog() {
   };
 
   const handleUpdate = async () => {
-    if (!updateInfo?.apkUrl || !window.ApkInstaller) return;
+    if (!updateInfo?.apkUrl) return;
+    if (Capacitor.isNativePlatform() === false) return;
 
     setDownloading(true);
     setStatus('downloading');
     setProgress(0);
 
     try {
-      const listener = window.ApkInstaller.addListener('downloadProgress', (data) => {
+      const listener = ApkInstaller.addListener('downloadProgress', (data) => {
         if (data.progress !== undefined) setProgress(data.progress);
         if (data.status === 'installed') setStatus('done');
       });
 
-      await window.ApkInstaller.downloadAndInstall({
+      await ApkInstaller.downloadAndInstall({
         url: updateInfo.apkUrl,
         fileName: `agripulse-v${updateInfo.version}.apk`,
       });

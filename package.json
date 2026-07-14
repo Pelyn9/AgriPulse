@@ -1,7 +1,7 @@
 {
   "name": "riceleaf-ai",
   "private": true,
-  "version": "14.0.1",
+  "version": "15.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --config vite.config.js",

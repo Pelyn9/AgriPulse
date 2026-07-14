@@ -9,6 +9,19 @@ import { SkeletonBlock } from '../components/SkeletonBlock';
 import { StatCard } from '../components/StatCard';
 import { useAppStore } from '../store/appStore';
 import { useScanStore } from '../store/scanStore';
+import type { PredictionType } from '../types';
+import { cn } from '../utils/cn';
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Healthy: 'bg-green-500',
+  'Nitrogen Deficiency': 'bg-blue-500',
+  'Phosphorus Deficiency': 'bg-purple-500',
+  'Potassium Deficiency': 'bg-amber-500',
+  'Brown Spot': 'bg-orange-500',
+  'Rice Blast': 'bg-rose-500',
+  'Bacterial Leaf Blight': 'bg-red-500',
+  'Rice Leaf Diseases': 'bg-pink-500',
+};
 
 export function HomePage() {
   const scans = useScanStore((state) => state.scans);
@@ -27,6 +40,12 @@ export function HomePage() {
   const pendingSync = scans.filter((scan) => !scan.synced).length;
   const recent = scans.slice(0, 3);
 
+  const categoryCounts = Object.keys(CATEGORY_COLORS).map((cat) => ({
+    label: cat,
+    count: scans.filter((s) => s.prediction === cat).length,
+  }));
+  const maxCount = Math.max(...categoryCounts.map((c) => c.count), 1);
+
   return (
     <div className="space-y-5">
       <PageHeader title={now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} eyebrow="RiceLeaf AI" />
@@ -43,6 +62,35 @@ export function HomePage() {
           <StatCard label="Pending Sync" value={pendingSync} icon={CloudUpload} tone="rose" />
         </div>
       </section>
+
+      {totalScans > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-black text-slate-950 dark:text-white">Categories</h2>
+          </div>
+          <AnimatedCard>
+            <div className="space-y-3">
+              {categoryCounts.filter((c) => c.count > 0).map((cat) => (
+                <div key={cat.label}>
+                  <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <span>{cat.label}</span>
+                    <span>{cat.count}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-500', CATEGORY_COLORS[cat.label] ?? 'bg-slate-400')}
+                      style={{ width: `${(cat.count / maxCount) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+              {categoryCounts.every((c) => c.count === 0) && (
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500">No category data yet.</p>
+              )}
+            </div>
+          </AnimatedCard>
+        </section>
+      )}
 
       <section>
           <div className="mb-3 flex items-center justify-between">
