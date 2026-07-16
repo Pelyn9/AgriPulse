@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Download, RefreshCw, X, CheckCircle } from 'lucide-react';
+import { Download, RefreshCw, X, CheckCircle, Bell } from 'lucide-react';
 import { App } from '@capacitor/app';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { useAppStore } from '../store/appStore';
@@ -92,7 +92,9 @@ export function UpdateDialog() {
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-200">
               <RefreshCw className={cn('h-6 w-6', status === 'installing' && 'animate-spin')} />
             </div>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">Update Available</h2>
+            <h2 className="text-xl font-black text-slate-950 dark:text-white">
+              {status === 'done' ? 'Update Installed' : 'Update Available'}
+            </h2>
             <p className="mt-1 text-sm font-bold text-green-600 dark:text-green-400">
               AgriPulse v{updateInfo.version}
             </p>
@@ -106,8 +108,8 @@ export function UpdateDialog() {
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
                   <span>
-                    {status === 'downloading' && 'Downloading...'}
-                    {status === 'installing' && 'Installing... Restarting shortly...'}
+                    {status === 'downloading' && 'Downloading update...'}
+                    {status === 'installing' && 'Download complete! Tap the notification to install'}
                     {status === 'done' && 'Update installed!'}
                     {status === 'error' && 'Download failed'}
                   </span>
@@ -121,6 +123,14 @@ export function UpdateDialog() {
                     transition={{ duration: 0.3 }}
                   />
                 </div>
+                {status === 'installing' && (
+                  <div className="mt-3 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+                    <Bell className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <p className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                      Pull down the notification bar and tap the download complete notification to install the update.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -135,7 +145,17 @@ export function UpdateDialog() {
                   Retry Download
                 </button>
               )}
-              {status !== 'error' && (
+              {status === 'done' && (
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 text-sm font-bold text-white"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Restart App
+                </button>
+              )}
+              {status !== 'error' && status !== 'done' && (
                 <button
                   type="button"
                   onClick={handleUpdate}
@@ -150,7 +170,7 @@ export function UpdateDialog() {
                   {downloading ? 'Downloading...' : 'Update Now'}
                 </button>
               )}
-              {status !== 'installing' && (
+              {status !== 'installing' && status !== 'done' && (
                 <button
                   type="button"
                   onClick={dismiss}
