@@ -4,7 +4,9 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LeafLogo } from '../components/LeafLogo';
 import { loginWithEmail, registerWithEmail } from '../services/authService';
+import { downloadScans } from '../services/syncService';
 import { useAppStore } from '../store/appStore';
+import { useScanStore } from '../store/scanStore';
 import { useSync } from '../hooks/useSync';
 import { createId } from '../utils/id';
 import type { UserSession } from '../types';
@@ -27,6 +29,7 @@ export function LoginPage() {
   const setSyncPrompt = useAppStore((state) => state.setSyncPrompt);
   const addToast = useAppStore((state) => state.addToast);
   const updateSettings = useAppStore((state) => state.updateSettings);
+  const loadScans = useScanStore((state) => state.loadScans);
   const sync = useSync();
   const {
     register,
@@ -48,8 +51,14 @@ export function LoginPage() {
       setSyncPrompt(false);
       localStorage.setItem('lastLoginEmail', user.email);
       await updateSettings({ cloudBackup: true });
-      addToast({ title: `Welcome, ${user.name}`, description: 'Local scans are ready for sync.', tone: 'success' });
       await sync(user);
+      const downloaded = await downloadScans(user);
+      if (downloaded > 0) {
+        await loadScans();
+        addToast({ title: `Welcome, ${user.name}`, description: `Synced local scans and restored ${downloaded} scan(s) from cloud.`, tone: 'success' });
+      } else {
+        addToast({ title: `Welcome, ${user.name}`, description: 'Local scans are ready for sync.', tone: 'success' });
+      }
       navigate(from, { replace: true });
     } catch (error) {
       addToast({

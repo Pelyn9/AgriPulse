@@ -9,6 +9,36 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '16.0.0',
+    date: 'July 17, 2026',
+    sections: [
+      {
+        title: 'Added',
+        items: [
+          'Login button in Settings for offline users to sign in and sync data',
+          'Cloud backup toggle now redirects to login when in offline mode',
+          'Full cloud sync — local scans upload to your account and cloud scans download back to device',
+          'Images are now restored from cloud when logging in on a new device',
+        ],
+      },
+      {
+        title: 'Improved',
+        items: [
+          'Clear local data now preserves cloud-synced scans when cloud backup is enabled',
+          'Sync toast shows how many scans were restored from cloud after login',
+          'Cloud backup hint text updates based on login status',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Cloud images now properly download from Supabase Storage instead of showing empty',
+          'Offline users can no longer accidentally toggle cloud backup without logging in first',
+        ],
+      },
+    ],
+  },
+  {
     version: '15.0.2',
     date: 'July 14, 2026',
     sections: [

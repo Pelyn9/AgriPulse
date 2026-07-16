@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   clearScans,
+  clearUnsyncedScans,
   deleteScan,
   getPendingScans,
   listScans,
@@ -14,7 +15,7 @@ interface ScanState {
   loadScans: () => Promise<void>;
   addScan: (scan: ScanRecord) => Promise<void>;
   removeScan: (id: string) => Promise<void>;
-  clearAll: () => Promise<void>;
+  clearAll: (keepSynced?: boolean) => Promise<void>;
   refreshPendingCount: () => Promise<number>;
 }
 
@@ -34,9 +35,14 @@ export const useScanStore = create<ScanState>((set, get) => ({
     await deleteScan(id);
     set((state) => ({ scans: state.scans.filter((scan) => scan.id !== id) }));
   },
-  clearAll: async () => {
-    await clearScans();
-    set({ scans: [] });
+  clearAll: async (keepSynced) => {
+    if (keepSynced) {
+      await clearUnsyncedScans();
+    } else {
+      await clearScans();
+    }
+    const scans = await listScans();
+    set({ scans });
   },
   refreshPendingCount: async () => {
     const pending = await getPendingScans();

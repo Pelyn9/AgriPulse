@@ -54,6 +54,23 @@ export async function clearScans() {
   await db.scans.clear();
 }
 
+export async function clearUnsyncedScans() {
+  const unsynced = await db.scans.filter((scan) => !scan.synced).toArray();
+  const ids = unsynced.map((s) => s.id);
+  if (ids.length > 0) {
+    await db.scans.bulkDelete(ids);
+  }
+}
+
+export async function getScansByIds(ids: string[]): Promise<ScanRecord[]> {
+  if (ids.length === 0) return [];
+  return db.scans.where('id').anyOf(ids).toArray();
+}
+
+export async function saveScans(scans: ScanRecord[]) {
+  await db.scans.bulkPut(scans);
+}
+
 export async function getPendingScans() {
   return db.scans.filter((scan) => !scan.synced).toArray();
 }

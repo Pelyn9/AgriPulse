@@ -1,4 +1,4 @@
-import { Bell, BookOpen, Cloud, Database, FlaskConical, Info, Languages, Leaf, LogOut, Moon, RefreshCw, Sparkles, Sun, Trash2, User, Wheat, type LucideIcon } from 'lucide-react';
+import { Bell, BookOpen, Cloud, Database, FlaskConical, Info, Languages, Leaf, LogIn, LogOut, Moon, RefreshCw, Sparkles, Sun, Trash2, User, Wheat, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
@@ -187,23 +187,23 @@ export function SettingsPage() {
           title="Cloud Backup"
           checked={settings.cloudBackup}
           onChange={(value) => {
-            if (value && !isOnline) {
-              addToast({ title: 'No internet connected', description: 'Cloud backup requires an internet connection.', tone: 'warning' });
+            if (value && (!user || user.provider === 'mock')) {
+              navigate('/login?from=settings');
               return;
             }
-            if (value && !user) {
-              navigate('/login?from=settings');
+            if (value && !isOnline) {
+              addToast({ title: 'No internet connected', description: 'Cloud backup requires an internet connection.', tone: 'warning' });
               return;
             }
             updateSettings({ cloudBackup: value });
           }}
         />
-        {settings.cloudBackup && user && (
+        {settings.cloudBackup && user && user.provider !== 'mock' && (
           <p className="pl-14 text-xs font-semibold text-field-700 dark:text-field-300">
             Syncing as {user.email}
           </p>
         )}
-        {!user && (
+        {(!user || user.provider === 'mock') && (
           <p className="pl-14 text-xs font-semibold text-slate-400 dark:text-slate-500">
             Login to enable cloud sync
           </p>
@@ -244,7 +244,7 @@ export function SettingsPage() {
             </p>
           </div>
         </div>
-        {user && user.provider === 'email' && (
+        {user && user.provider === 'email' ? (
           <button
             type="button"
             onClick={async () => {
@@ -259,17 +259,27 @@ export function SettingsPage() {
             {settings.theme === 'dark' ? <Moon className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
             Logout
           </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigate('/login?from=settings')}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 dark:border-white/10 dark:text-slate-200"
+          >
+            <LogIn className="h-4 w-4" />
+            Login
+          </button>
         )}
       </section>
 
       <ConfirmationDialog
         open={confirmClear}
         title="Clear local data?"
-        description="This deletes scan records stored on this device. Cloud copies are not affected."
+        description={settings.cloudBackup && user && user.provider !== 'mock' ? 'Unsynced local scans will be removed. Cloud-synced copies are preserved.' : 'This deletes scan records stored on this device. Cloud copies are not affected.'}
         confirmLabel="Clear"
         onCancel={() => setConfirmClear(false)}
         onConfirm={async () => {
-          await clearAll();
+          const keepSynced = !!(settings.cloudBackup && user && user.provider !== 'mock');
+          await clearAll(keepSynced);
           setConfirmClear(false);
           addToast({ title: 'Local data cleared', tone: 'warning' });
         }}
