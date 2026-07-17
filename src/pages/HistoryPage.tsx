@@ -1,11 +1,10 @@
-import { Download, Filter, Search, Trash2 } from 'lucide-react';
+import { Filter, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { HistoryCard } from '../components/HistoryCard';
 import { PageHeader } from '../components/PageHeader';
 import { useAppStore } from '../store/appStore';
 import { useScanStore } from '../store/scanStore';
-import { scansToCsv, downloadTextFile } from '../utils/csv';
 import { cn } from '../utils/cn';
 
 type FilterKey = 'all' | 'healthy' | 'deficient' | 'pending';
@@ -38,27 +37,9 @@ export function HistoryPage() {
     });
   }, [filter, query, scans]);
 
-  const handleExport = () => {
-    downloadTextFile('riceleaf-scan-history.csv', scansToCsv(filteredScans), 'text/csv');
-    addToast({ title: 'Export created', description: `${filteredScans.length} scans exported.`, tone: 'success' });
-  };
-
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="History"
-        eyebrow="Local scan records"
-        action={
-          <button
-            type="button"
-            onClick={handleExport}
-            className="grid h-11 w-11 place-items-center rounded-2xl bg-field-700 text-white shadow-lg shadow-field-900/20 dark:bg-field-300 dark:text-field-950"
-            aria-label="Export history"
-          >
-            <Download className="h-5 w-5" />
-          </button>
-        }
-      />
+      <PageHeader title="History" eyebrow="Local scan records" />
 
       <div className="rounded-2xl border border-white/70 bg-white/90 p-3 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75">
         <label className="flex min-h-12 items-center gap-2 rounded-xl bg-slate-100 px-3 dark:bg-white/10">

@@ -52,7 +52,7 @@ function loadPersistedUser(): UserSession | null {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
+  isOnline: true,
   isOfflineMode: false,
   settings: defaultSettings,
   user: loadPersistedUser(),

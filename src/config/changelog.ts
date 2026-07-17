@@ -9,6 +9,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '16.0.2',
+    date: 'July 17, 2026',
+    sections: [
+      {
+        title: 'Improved',
+        items: [
+          'Reports pie chart redesigned as interactive donut chart with tooltips and percentages',
+          'Reports bar chart now uses Recharts with value labels, sorted months, and interactive tooltips',
+          'Export section redesigned — CSV, Excel (.xlsx), and PDF with proper file generation',
+          'Excel export now includes all scan fields (symptoms, causes, treatment, prevention, recovery tips)',
+          'PDF export generates a styled landscape document with table formatting',
+          'Export buttons removed from History page — exports are now Reports-only',
+        ],
+      },
+      {
+        title: 'Fixed',
+        items: [
+          'Internet detection now uses real fetch check instead of relying only on Capacitor Network plugin',
+          'Login page no longer falsely shows "No internet" when connection is available',
+          'Connectivity status rechecks every 8 seconds for accurate real-time detection',
+          'App starts optimistic (online) to prevent false offline flash on load',
+        ],
+      },
+    ],
+  },
+  {
     version: '16.0.1',
     date: 'July 17, 2026',
     sections: [

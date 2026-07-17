@@ -89,10 +89,6 @@ export function LoginPage() {
   };
 
   const onSubmit = (values: LoginForm) => {
-    if (!isOnline) {
-      addToast({ title: 'No internet connected', description: 'Login requires an internet connection. Use offline mode instead.', tone: 'warning' });
-      return;
-    }
     if (mode === 'login') {
       finishAuth(loginWithEmail({ email: values.email, password: values.password }));
     } else {
