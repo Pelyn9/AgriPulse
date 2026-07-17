@@ -9,7 +9,7 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    version: '16.0.0',
+    version: '16.0.1',
     date: 'July 17, 2026',
     sections: [
       {
@@ -27,6 +27,7 @@ export const changelog: ChangelogEntry[] = [
           'Clear local data now preserves cloud-synced scans when cloud backup is enabled',
           'Sync toast shows how many scans were restored from cloud after login',
           'Cloud backup hint text updates based on login status',
+          'Update dialog now shows notification reminder at 100% and a Restart App button after install',
         ],
       },
       {
